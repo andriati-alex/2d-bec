@@ -113,10 +113,13 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         hx,
         hy,
         Idt,
-        norm;
+        norm,
+        meanr,
+        maxres;
 
     double complex
         E,
+        mu,
         dt,
         midx,
         midy;
@@ -210,6 +213,12 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
 
 
 
+    printf("\n\n    time     Energy            mu");
+    printf("               <r>          Max. Res.");
+    sepline();
+
+
+
     for (k = 0; k < N; k++)
     {
 
@@ -254,10 +263,17 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         renormalize(nx,ny,S,hx,hy,norm);
 
 
-        if ( (k+1) % 50 == 0 )
+        if ( (k+1) % 100 == 0 )
         {
             E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
-            printf("\n\t%6d       %15.7E", k + 1, creal(E));
+            mu = Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
+            meanr = MeanR(nx,ny,S,hx,hy,x,y);
+            maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
+
+            printf("\n%8.3lf   %15.7E",(k + 1)*realDT,creal(E));
+            printf("   %15.7E",creal(mu));
+            printf("    %9.7lf",meanr);
+            printf("    %9.7lf",maxres);
         }
 
     }

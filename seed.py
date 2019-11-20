@@ -61,7 +61,7 @@ def HarmonicTrap(x, y, n):
     kx = (np.arange(0, int(n)) * noisex) * 2 * np.pi / sigx;
     ky = (np.arange(0, int(n)) * noisey) * 2 * np.pi / sigy;
 
-    w = (1.0 / np.arange(1, n + 1)**2);
+    w = (1.0 / np.arange(1, n + 1)**1.5);
 
     for i in range(int(n)):
         expargx = 1.0j * kx[i] * x - ((x - midx) / sigx)**2;
@@ -70,13 +70,11 @@ def HarmonicTrap(x, y, n):
         for k in range(x.size):
 
             for l in range(y.size):
+                ph = expargx[k] + expargy[l];
+                rl = 1.0 + 1.0j;
+                for j in range((i+1)%4): rl = rl*(x[k] + 1.0j*y[l]);
 
-                r2 = x[k]**2 + y[l]**2;
-                ph = 1.0j*kx[i]*ky[i]*x[k]*y[l]/(r2+1E-3) + \
-                     expargx[k] + expargy[l];
-                fr = sqrt(r2)**(i%4);
-
-                S[k,l] = S[k,l] + fr*w[i]*np.exp(ph);
+                S[k,l] = S[k,l] + rl*w[i]*np.exp(ph);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);

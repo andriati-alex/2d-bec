@@ -18,6 +18,11 @@ double MeanR(int,int,Carray,double,double,Rarray,Rarray);
 
 
 
+double MaxResidue(int nx, int ny, double hx, double hy, double b, double Ome,
+        double g, Rarray V, Rarray x, Rarray y, Carray f, double mu);
+
+
+
 
 
 #endif
