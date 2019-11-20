@@ -1,0 +1,30 @@
+# ALEX V. ANDRIATI BENCHMARK OF 2D GROSS-PITAEVSKII EQUATION
+# 
+# Here are some values resulting from the imaginary time propagation to
+# find the ground state of a 2D confined BEC. Before explain each column
+# the commun parameters are:
+#
+#   I. Isotropic harmonic confinement (x^2 + y^2)/2
+#  II. No rotation applied
+# III. Dimensionless units the factor multiplying the derivatives is 1/2
+#
+# The results explored here are obtained using a function normalized  to 1
+# To compute the residue, given the Hamiltonian and the solution '\Psi' we
+# compute | \mu*\Psi - H(\Psi) | at each gird point.  Then  we display the
+# maximum over the grid points and the integration.
+# The columns indicate the following quantities:
+#
+#   1. time step
+#   2. spatial domain boundary 1
+#   3. spatial domain boundary 2
+#   4. number of grid points in each direction
+#   5. interaction strength (factor that multiply the non-linearity)
+#   6. Energy
+#   7. chemical potential
+#   8. average radius
+#   9. Maximun Residue on the grid
+#  10. Integrated absolute value of residue over the grid
+#
+#
+0.0005 -6.0 6.0 121 10.0 1.5923196E+00 2.0629324E+00 1.1377063 0.0007851 0.0209444
+0.0004 -6.0 6.0 121 20.0 2.0051456E+00 2.7391381E+00 1.2842007 0.0004989 0.0144112
