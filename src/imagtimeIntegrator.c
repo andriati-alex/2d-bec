@@ -20,7 +20,7 @@ void ExplicitY(int nx, int ny, int j, doublec dt, double hy, double b,
         for (i = 0; i < nx; i++)
         {
             out[i] = (I - mu) * in[i + j*nx] + \
-                     (0.5*I*x[i]*sig + 0.5*mu) * in[i + (j+1)*nx];
+                     0.5 * (I*x[i]*sig + mu) * in[i + (j+1)*nx];
         }
 
         return;
@@ -31,7 +31,7 @@ void ExplicitY(int nx, int ny, int j, doublec dt, double hy, double b,
         for (i = 0; i < nx; i++)
         {
             out[i] = (I - mu) * in[i + j*nx] + \
-                     (0.5*mu - 0.5*I*x[i]*sig) * in[i + (j-1)*nx];
+                     0.5 * (mu - I*x[i]*sig) * in[i + (j-1)*nx];
         }
 
         return;
@@ -40,8 +40,8 @@ void ExplicitY(int nx, int ny, int j, doublec dt, double hy, double b,
     for (i = 0; i < nx; i++)
     {
         out[i] = (I - mu) * in[i + j*nx] + \
-                 (0.5*I*x[i]*sig + 0.5*mu) * in[i + (j+1)*nx] + \
-                 (0.5*mu - 0.5*I*x[i]*sig) * in[i + (j-1)*nx];
+                 0.5 * (I*x[i]*sig + mu) * in[i + (j+1)*nx] + \
+                 0.5 * (mu - I*x[i]*sig) * in[i + (j-1)*nx];
     }
 }
 
@@ -224,25 +224,26 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
     for (k = 0; k < N; k++)
     {
 
-        carrAbs2(nx*ny,S,abs2);
-
         // Evolution of potential part in half step
+        carrAbs2(nx*ny,S,abs2);
         rarrUpdate(nx*ny,V,g,abs2,pot);
         rcarrExp(nx*ny,0.5*Idt,pot,stepexp);
         carrMultiply(nx*ny,stepexp,S,linpart);
+        carrCopy(nx*ny,linpart,S);
 
 
 
         // Evolution of derivative part entire step
         for (j = 0; j < ny; j++)
         {
-            ExplicitY(nx,ny,j,dt,hy,b,Ome,x,linpart,rhsx);
+            ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,rhsx);
             triDiag(nx,upperx[j],lowerx[j],midx,rhsx,&linpart[j*nx]);
         }
+        carrCopy(nx*ny,linpart,S);
 
         for (i = 0; i < nx; i++)
         {
-            ExplicitX(nx,ny,i,dt,hx,b,Ome,y,linpart,rhsy);
+            ExplicitX(nx,ny,i,dt,hx,b,Ome,y,S,rhsy);
             triDiag(ny,uppery[i],lowery[i],midy,rhsy,aux);
             for (j = 0; j < ny; j++)
             {
@@ -252,9 +253,8 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
 
 
 
-        carrAbs2(nx*ny,linpart,abs2);
-
         // Evolution of potential part another half step
+        carrAbs2(nx*ny,linpart,abs2);
         rarrUpdate(nx*ny,V,g,abs2,pot);
         rcarrExp(nx*ny,0.5*Idt,pot,stepexp);
         carrMultiply(nx*ny,stepexp,linpart,S);
