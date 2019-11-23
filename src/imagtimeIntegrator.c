@@ -276,8 +276,8 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
             printf("\n%5.1lf%%   %15.7E",(100.0*k)/N,creal(E));
             printf("  %15.7E",creal(mu));
             printf("    %9.7lf",meanr);
-            printf("    %9.7lf",maxres);
-            printf("    %9.7lf",avgres);
+            printf("    %8.5lf",maxres);
+            printf("    %6.3lf",avgres);
         }
 
     }

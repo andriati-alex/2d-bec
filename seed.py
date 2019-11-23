@@ -45,7 +45,7 @@ from math import sqrt;
 def VortexLattice(x, y, n):
     n = int(n);
 
-    S = np.zeros([x.size,y.size],dtype=np.complex128);
+    S = np.zeros([y.size,x.size],dtype=np.complex128);
 
     # generate random numbers in the range [-1,1]
     # noisex = (np.random.random(int(n)) - 0.5) / 0.5;
@@ -67,20 +67,19 @@ def VortexLattice(x, y, n):
 
     for i in range(int(n)):
 
-        noise = np.pi * (np.random.random([x.size,y.size]) - 0.5) / 0.5;
-        for k in range(x.size):
+        noise = np.pi * (np.random.random([y.size,x.size]) - 0.5) / 0.5;
+        for k in range(y.size):
 
-            for l in range(y.size):
-                ph = 1.0j * noise[k,l] + expargx[k] + expargy[l];
+            for l in range(x.size):
+                ph = 1.0j * noise[k,l] + expargx[l] + expargy[k];
                 rl = 1.0;
-                for j in range((i + 1)%2): rl = rl * (x[k] + 1.0j*y[l]);
+                for j in range((i + 1)%2): rl = rl * (x[l] + 1.0j*y[k]);
 
                 S[k,l] = S[k,l] + rl*w[i]*np.exp(ph);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
-    for i in range(y.size):
-        intx[i] = simps(abs2[:,i], dx = x[1]-x[0]);
+    for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
 
     return S / sqrt(simps(intx, dx = y[1]-y[0]));
 
@@ -90,7 +89,7 @@ def VortexLattice(x, y, n):
 
 def NoRotation(x, y):
 
-    S = np.zeros([x.size,y.size],dtype=np.complex128);
+    S = np.zeros([y.size,x.size],dtype=np.complex128);
 
     # generate random numbers in the range [-1,1]
     # noisex = (np.random.random(int(n)) - 0.5) / 0.5;
@@ -109,17 +108,16 @@ def NoRotation(x, y):
     expargx = - ((x - midx) / sigx)**2;
     expargy = - ((y - midy) / sigy)**2;
 
-    noise = np.pi * (np.random.random([x.size,y.size]) - 0.5) / 0.5;
+    noise = np.pi * (np.random.random([y.size,x.size]) - 0.5) / 0.5;
 
-    for k in range(x.size):
-        for l in range(y.size):
-            ph = 1.0j * noise[k,l] + expargx[k] + expargy[l];
+    for k in range(y.size):
+        for l in range(x.size):
+            ph = 1.0j * noise[k,l] + expargx[l] + expargy[k];
             S[k,l] = np.exp(ph);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
-    for i in range(y.size):
-        intx[i] = simps(abs2[:,i], dx = x[1]-x[0]);
+    for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
 
     return S / sqrt(simps(intx, dx = y[1]-y[0]));
 
@@ -147,8 +145,8 @@ seedName = sys.argv[7];
 x = np.linspace(x1, x2, nx);
 y = np.linspace(y1, y2, ny);
 
-if (seedName == 'rotating') : S = VortexLattice(x,y,3).reshape(1,nx*ny)[0];
-elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(1,nx*ny)[0];
+if (seedName == 'rotating') : S = VortexLattice(x,y,1).reshape(nx*ny);
+elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(nx*ny);
 else : print('\nSeed name %s not recognized\n\n' % seedName);
 
 folder = str(Path.home()) + '/AndriatiLibrary/2d-bec/input/';
@@ -164,9 +162,7 @@ f.close();
 
 f = open(folder + seedName + '_eq.dat', "w");
 
-if (seedName == 'stationary') :
-    f.write("-0.5 0.0 10.0 1.0 1.0 0.0");
-else :
-    f.write("-0.5 0.8 50.0 1.0 1.0 0.0");
+if (seedName == 'stationary') : f.write("-0.5 0.0 10.0 1.0 1.0 0.0");
+else : f.write("-0.5 0.8 50.0 1.0 1.0 0.0");
 
 f.close();
