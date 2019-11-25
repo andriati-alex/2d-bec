@@ -415,8 +415,8 @@ int main(int argc, char * argv[])
             case 1:
                 N = SplitStepPR(EQ, N, dt, S);
                 time_used = (double) (omp_get_wtime() - start);
-                printf("\nTime taken to solve");
-                printf(" : %.3f seconds\n", time_used);
+                printf("\n\nTime taken to solve");
+                printf(" : %.0lf seconds\n", time_used);
                 break;
         }
 

@@ -114,6 +114,7 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         hy,
         Idt,
         norm,
+        vir,
         meanr,
         maxres,
         avgres;
@@ -214,9 +215,9 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
 
 
 
-    printf("\n\nProgrs     Energy           mu");
-    printf("               <r>          Max. Res.");
-    printf("    Avg. Res.");
+    printf("\n\nProgrs     Energy       mu");
+    printf("           <r>          Max. Res.");
+    printf("     Virial");
     sepline();
 
 
@@ -272,12 +273,14 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
             meanr = MeanR(nx,ny,S,hx,hy,x,y);
             maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
             avgres = AvgResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
+            vir = Virial(nx,ny,hx,hy,b,g,V,S);
 
-            printf("\n%5.1lf%%   %15.7E",(100.0*k)/N,creal(E));
-            printf("  %15.7E",creal(mu));
+            printf("%5.1lf%%   %11.7lf",(100.0*k)/N,creal(E));
+            printf("  %11.7lf",creal(mu));
             printf("    %9.7lf",meanr);
             printf("    %8.5lf",maxres);
-            printf("    %6.3lf",avgres);
+            printf("    %9.5lf",vir);
+            printf("\n");
         }
 
     }

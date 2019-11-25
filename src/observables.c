@@ -108,6 +108,162 @@ doublec Energy(int nx, int ny, double hx, double hy, double b, double Ome,
 
 
 
+double Kinect(int nx, int ny, double hx, double hy, double b, Carray f)
+{
+
+    int
+        j,
+        i;
+
+    double
+        E;
+
+    Carray
+        dfdx,
+        dfdy;
+
+    Rarray
+        Integ,
+        abs2dfdx,
+        abs2dfdy;
+
+
+
+    Integ = rarrDef(nx*ny);
+    dfdx = carrDef(nx*ny);
+    dfdy = carrDef(nx*ny);
+    abs2dfdx = rarrDef(nx*ny);
+    abs2dfdy = rarrDef(nx*ny);
+
+
+
+    DfDx(nx,ny,f,hx,dfdx);
+    DfDy(nx,ny,f,hy,dfdy);
+
+    carrAbs2(nx*ny,dfdx,abs2dfdx);
+    carrAbs2(nx*ny,dfdy,abs2dfdy);
+
+    for (i = 0; i < nx; i++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            Integ[i + j*nx] = -b * (abs2dfdx[i + j*nx] + abs2dfdy[i + j*nx]);
+        }
+    }
+
+    E = Rsimps2D(nx,ny,Integ,hx,hy);
+
+    // release memory
+    free(dfdx); free(dfdy); free(abs2dfdx); free(abs2dfdy); free(Integ);
+
+    return E;
+}
+
+
+
+
+
+double Potential(int nx, int ny, double hx, double hy, Rarray V, Carray f)
+{
+
+    int
+        j,
+        i;
+
+    double
+        E;
+
+    Rarray
+        Integ,
+        abs2f;
+
+    Integ = rarrDef(nx*ny);
+    abs2f = rarrDef(nx*ny);
+
+    carrAbs2(nx*ny,f,abs2f);
+
+    for (i = 0; i < nx; i++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            Integ[i + j*nx] = V[i + j*nx] * abs2f[i + j*nx];
+        }
+    }
+
+    E = Rsimps2D(nx,ny,Integ,hx,hy);
+
+    // release memory
+    free(abs2f); free(Integ);
+
+    return E;
+}
+
+
+
+
+
+double Interacting(int nx, int ny, double hx, double hy, double g, Carray f)
+{
+
+    int
+        j,
+        i;
+
+    double
+        E;
+
+    Rarray
+        Integ,
+        abs2f;
+
+    Integ = rarrDef(nx*ny);
+    abs2f = rarrDef(nx*ny);
+
+    carrAbs2(nx*ny,f,abs2f);
+
+    for (i = 0; i < nx; i++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            Integ[i + j*nx] = 0.5 * g * abs2f[i + j*nx] * abs2f[i + j*nx];
+        }
+    }
+
+    E = Rsimps2D(nx,ny,Integ,hx,hy);
+
+    // release memory
+    free(abs2f); free(Integ);
+
+    return E;
+}
+
+
+
+
+
+double Virial(int nx, int ny, double hx, double hy, double b, double g,
+       Rarray V, Carray f)
+{
+    int
+        i,
+        j;
+
+    double
+        K,
+        Vint,
+        Vtrap;
+
+    K = Kinect(nx,ny,hx,hy,b,f);
+    Vtrap = Potential(nx,ny,hx,hy,V,f);
+    Vint = Interacting(nx,ny,hx,hy,g,f);
+
+    return - 2 * K + 2 * Vtrap - 2 * Vint;
+}
+
+
+
+
+
 double MeanR(int nx, int ny, Carray f, double hx, double hy,
        Rarray x, Rarray y)
 {
