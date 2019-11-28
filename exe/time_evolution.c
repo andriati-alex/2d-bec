@@ -415,7 +415,13 @@ int main(int argc, char * argv[])
             case 1:
                 N = SplitStepPR(EQ, N, dt, S);
                 time_used = (double) (omp_get_wtime() - start);
-                printf("\n\nTime taken to solve");
+                printf("\n\nTime taken to solve with Peaceman-Rachford");
+                printf(" : %.0lf seconds\n", time_used);
+                break;
+            case 2:
+                N = SplitStepDYakonov(EQ, N, dt, S);
+                time_used = (double) (omp_get_wtime() - start);
+                printf("\n\nTime taken to solve with D'Yakonov");
                 printf(" : %.0lf seconds\n", time_used);
                 break;
         }
