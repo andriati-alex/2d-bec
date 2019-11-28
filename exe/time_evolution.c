@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "imagtimeIntegrator.h"
+#include "realtimeIntegrator.h"
 #include "linearPotential.h"
 
 
@@ -50,7 +51,8 @@ void SaveConf(FILE * f, EqDataPkg EQ, double dt, int N)
 
     // Equation parameters
     fprintf(f, "%.15lf %.15lf %.15lf ", EQ->b, EQ->Ome, EQ->g);
-    fprintf(f, "%.15lf %.15lf %.15lf\n", EQ->p[0], EQ->p[1], EQ->p[2]);
+    fprintf(f, "%.15lf %.15lf %.15lf %.15lf\n",
+            EQ->p[0], EQ->p[1], EQ->p[2], EQ->p[3]);
 
 }
 
@@ -77,7 +79,7 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
         xf,
         yi,
         yf,
-        p[3];
+        p[4];
 
 
 
@@ -91,8 +93,8 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
     // Read a line of numbers corresponding to equation parameters
     // -----------------------------------------------------------
 
-    k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
-        &p[0], &p[1], &p[2]);
+    k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
+        &p[0], &p[1], &p[2], &p[3]);
 
     return PackEqData(nx,ny,xi,xf,yi,yf,b,g,Ome,Vname,p);
 
@@ -129,6 +131,7 @@ int main(int argc, char * argv[])
         ny,
         method,
         Nlines,
+        skipframes,
         resetinit;
 
 
@@ -219,6 +222,7 @@ int main(int argc, char * argv[])
                 break;
             case 6:
                 fscanf(job_file, "%d", &Nlines);
+                skipframes = Nlines;
                 i = i + 1;
                 break;
             case 7:
@@ -358,7 +362,8 @@ int main(int argc, char * argv[])
     EQ = SetupParams(eq_file, domain_file, potname, &dt, &N);
     nx = EQ->nx;
     ny = EQ->ny;
-    S = carrDef(nx*ny); // solution at discretized positions
+
+    S = carrDef(nx*ny); // solution at grid points
     abs2 = rarrDef(nx*ny);
 
 
@@ -386,8 +391,9 @@ int main(int argc, char * argv[])
     fclose(orb_file);
 
     printf("\nGot Initial condition, with norm =");
-    printf(" %.10lf", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
-    printf(". nx = %d | ny = %d | hx = %.10lf | hy = %.10lf\n",nx,ny,EQ->hx,EQ->hy);
+    printf(" %.10lf\n", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
+    printf("nx = %d | ny = %d | hx = %.10lf | hy = %.10lf\n",
+           nx, ny, EQ->hx, EQ->hy);
 
 
 
@@ -432,6 +438,33 @@ int main(int argc, char * argv[])
         strcat(fname, "_line-1_orb_imagtime.dat");
 
         carr_txt(fname, nx*ny, S);
+
+    }
+
+    if (timeinfo == 'r' || timeinfo == 'R')
+    {
+        sepline();
+        printf("\nDoing real time integration\n\n");
+
+        // Record data
+        strcpy(fname, "output/");
+        strcat(fname, outfname);
+        strcat(fname, "_orb_realtime.dat");
+        switch (method)
+        {
+            case 1:
+                N = RealSplitStepPR(EQ, N, dt, S, skipframes, fname);
+                time_used = (double) (omp_get_wtime() - start);
+                printf("\n\nTime taken to solve with Peaceman-Rachford");
+                printf(" : %.0lf seconds\n", time_used);
+                break;
+            case 2:
+                N = RealSplitStepDYakonov(EQ, N, dt, S, skipframes, fname);
+                time_used = (double) (omp_get_wtime() - start);
+                printf("\n\nTime taken to solve with D'Yakonov");
+                printf(" : %.0lf seconds\n", time_used);
+                break;
+        }
 
     }
 

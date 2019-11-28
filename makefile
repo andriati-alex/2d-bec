@@ -12,7 +12,8 @@ obj = memoryHandling.o 	   \
 	  calculus.o           \
 	  observables.o        \
 	  inout.o              \
-	  imagtimeIntegrator.o
+	  imagtimeIntegrator.o \
+	  realtimeIntegrator.o
 
 
 
@@ -84,6 +85,11 @@ observables.o : src/observables.c
 
 imagtimeIntegrator.o : src/imagtimeIntegrator.c
 	icc -c -O3 -qopenmp -I./include src/imagtimeIntegrator.c
+
+
+
+realtimeIntegrator.o : src/realtimeIntegrator.c
+	icc -c -O3 -qopenmp -I./include src/realtimeIntegrator.c
 
 
 
