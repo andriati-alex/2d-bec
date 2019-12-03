@@ -85,6 +85,48 @@ def VortexLattice(x, y, n):
 
 
 
+def VortexLattice2(x, y, n):
+    n = int(n);
+
+    S = np.zeros([y.size,x.size],dtype=np.complex128);
+
+    # generate random numbers in the range [-1,1]
+    noise = np.pi * (np.random.random(int(n)) - 0.5) / 0.5;
+
+    # Localized by a Gaussian like-shape
+    sigx = 0.1 * (x[-1] - x[0]);
+    sigy = 0.1 * (y[-1] - y[0]);
+    midx = (x[-1] + x[0]) / 2;
+    midy = (y[-1] + y[0]) / 2;
+
+    # Momenta with some noise
+    # kx = (np.arange(0, int(n)) * noisex) * 2 * np.pi / sigx;
+    # ky = (np.arange(0, int(n)) * noisey) * 2 * np.pi / sigy;
+
+    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(2,n+2)));
+    expargx = - ((x - midx) / sigx)**2;
+    expargy = - ((y - midy) / sigy)**2;
+
+    for i in range(int(n)):
+
+        for k in range(y.size):
+
+            for l in range(x.size):
+                ph = 1.0j * noise[i] + expargx[l] + expargy[k];
+                rl = (x[l] + 1.0j*y[k])**(i+1);
+
+                S[k,l] = S[k,l] + rl*w[i]*np.exp(ph);
+
+    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5));
+
+    abs2 = abs(S)**2;
+    intx = np.zeros(y.size,dtype=np.float64);
+    for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
+
+    return S / sqrt(simps(intx, dx = y[1]-y[0]));
+
+
+
 
 
 def NoRotation(x, y):
@@ -149,7 +191,7 @@ if (seedName == 'rotating') : S = VortexLattice(x,y,1).reshape(nx*ny);
 elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(nx*ny);
 else : print('\nSeed name %s not recognized\n\n' % seedName);
 
-folder = str(Path.home()) + '/AndriatiLibrary/2d-bec/input/';
+folder = str(Path.home()) + '/programs/2d-bec/input/';
 
 np.savetxt(folder + seedName + '_init.dat', S.T, fmt='%.15E');
 
