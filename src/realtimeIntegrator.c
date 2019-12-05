@@ -3,7 +3,7 @@
 
 
 int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
-                    char fname [])
+                    char prefix [])
 {
 
     unsigned int
@@ -28,6 +28,9 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         midx,
         midy;
 
+    char
+	fname[100];
+
     Carray
         stepexp,
         linpart,
@@ -46,9 +49,14 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         pot,
         abs2;
 
-    FILE * f;
+    FILE
+	* f,
+	* ftime;
 
 
+
+    strcpy(fname,prefix);
+    strcat(fname,"_orb_realtime.dat");
 
     f = fopen(fname, "w");
 
@@ -56,7 +64,21 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
     {
         printf("\n\nERROR: impossible to open file '%s'", fname);
         printf(" to write solution in time steps\n\n");
-        return -1; 
+        exit(EXIT_FAILURE);
+    }
+
+
+
+    strcpy(fname,prefix);
+    strcat(fname,"_time.dat");
+
+    ftime = fopen(fname, "w");
+
+    if (ftime == NULL)  // impossible to open file
+    {
+        printf("\n\nERROR: impossible to open file '%s'", fname);
+        printf(" to time steps which solution is recorded\n\n");
+        exit(EXIT_FAILURE);
     }
 
 
@@ -78,6 +100,9 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
     stepexp = carrDef(nx*ny); // Result after applied potential part
     linpart = carrDef(nx*ny); // result after solved differential part
 
+    
+    
+    
     // diagonals of tridiagonal systems. When implicit in x-direction
     // there are ny tridiagonal systems to be solved, each one with
     // constant entries, but not equal from one system to another,
@@ -136,7 +161,9 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
     // Record initial condition
     countFrames = 1;
     fprintf(f,"# Solution at equally spaced time steps\n");
+    fprintf(ftime,"# Time steps whose the solution is recorded\n");
     carr_inline(f,nx*ny,S);
+    fprintf(ftime,"%.5lf",0.0);
 
     for (k = 0; k < N; k++)
     {
@@ -192,6 +219,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         if ( countFrames == skipFrames + 1 )
         {
             carr_inline(f,nx*ny,S);
+    	    fprintf(ftime,"\n%.5lf",(k+1)*dt);
             countFrames = 1;
         }
         else
@@ -214,6 +242,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
     free(aux);
 
     fclose(f);
+    fclose(ftime);
 
     return N + 1;
 }
@@ -223,7 +252,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
 
 
 int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
-                          int skipFrames, char fname [])
+                          int skipFrames, char prefix [])
 {
 
     unsigned int
@@ -248,6 +277,9 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         midx,
         midy;
 
+    char
+	fname[100];
+
     Carray
         stepexp,
         linpart,
@@ -267,9 +299,14 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         pot,
         abs2;
 
-    FILE * f;
+    FILE
+	* f,
+	* ftime;
 
 
+
+    strcpy(fname,prefix);
+    strcat(fname,"_orb_realtime.dat");
 
     f = fopen(fname, "w");
 
@@ -277,7 +314,21 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
     {
         printf("\n\nERROR: impossible to open file '%s'", fname);
         printf(" to write solution in time steps\n\n");
-        return -1; 
+        exit(EXIT_FAILURE);
+    }
+
+
+
+    strcpy(fname,prefix);
+    strcat(fname,"_time.dat");
+
+    ftime = fopen(fname, "w");
+
+    if (ftime == NULL)  // impossible to open file
+    {
+        printf("\n\nERROR: impossible to open file '%s'", fname);
+        printf(" to time steps which solution is recorded\n\n");
+        exit(EXIT_FAILURE);
     }
 
     Idt = - I * dt; // - I * dt : multiply operators after split-step
@@ -356,7 +407,9 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
     // Record initial condition
     countFrames = 1;
     fprintf(f,"# Solution at equally spaced time steps\n");
+    fprintf(ftime,"# Time steps whose the solution is recorded\n");
     carr_inline(f,nx*ny,S);
+    fprintf(ftime,"%.5lf",0.0);
 
     for (k = 0; k < N; k++)
     {
@@ -416,6 +469,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         if ( countFrames == skipFrames + 1 )
         {
             carr_inline(f,nx*ny,S);
+	    fprintf(ftime,"\n%.5lf",(k+1)*dt);
             countFrames = 1;
         }
         else
@@ -439,6 +493,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
     free(auxy);
 
     fclose(f);
+    fclose(ftime);
 
     return N + 1;
 }

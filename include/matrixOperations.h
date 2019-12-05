@@ -46,6 +46,11 @@ void cmatFillTri(int n, Carray upper, Carray mid, Carray lower, Cmatrix M);
 
 
 
+void RowMajor(int m, int n, Cmatrix M, Carray v);
+/* Store Matrix M(m x n) in a vector v using Row Major scheme */
+
+
+
 void setValueCCScmat(int n, int i, int j, int col, doublec z, CCScmat M);
 /*        Set a value in the i row and original column number col      */
 
@@ -61,22 +66,6 @@ CCScmat tri2CCS(int n, Carray upper, Carray lower, Carray mid);
  * n the dimension of the matrix. Returns a pointer to CCS struct
  *
  *****************************************************************************/
-
-
-
-CCScmat cyclic2CCS(int n, Carray upper, Carray lower, Carray mid);
-/*      Fill in CCS format given tridiagonal cyclic system      */
-
-
-
-void RowMajor(int m, int n, Cmatrix M, Carray v);
-/* Store Matrix M(m x n) in a vector v using Row Major scheme */
-
-
-
-CCScmat CNmat(int M, double dx, doublec dt, double a2, doublec a1,
-        double inter, Rarray V, int cyclic, Carray upper, Carray lower,
-        Carray mid);
 
 
 
@@ -131,7 +120,7 @@ void CCSrmatvec(int n, Rarray vals, int * cols, int m, Rarray vec, Rarray ans);
 
 
 int HermitianInv(int M, Cmatrix A, Cmatrix A_inv);
-/* Invert an hermitian matrix */
+/* Invert an hermitian matrix (uses LAPACK routines) */
 
 
 #endif

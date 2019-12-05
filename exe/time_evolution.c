@@ -13,6 +13,7 @@ void ReachNewLine(FILE * f)
 {
 
     // Read until get new line or 'end of file' in a opened file.
+    // Function to skip comment lines in job configuration file
 
     char
         sentinel;
@@ -281,7 +282,7 @@ int main(int argc, char * argv[])
     if (eq_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        return -1;
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -303,7 +304,7 @@ int main(int argc, char * argv[])
     if (domain_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        return -1;
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -325,7 +326,7 @@ int main(int argc, char * argv[])
     if (orb_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        return -1;
+        exit(EXIT_FAILURE);
     }
     else
     {
@@ -352,7 +353,7 @@ int main(int argc, char * argv[])
     if (job_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        return -1;
+        exit(EXIT_FAILURE);
     }
 
     fprintf(job_file, "# Trap name : %s\n", potname);
@@ -449,7 +450,7 @@ int main(int argc, char * argv[])
         // Record data
         strcpy(fname, "output/");
         strcat(fname, outfname);
-        strcat(fname, "_orb_realtime.dat");
+        // strcat(fname, "_orb_realtime.dat");
         switch (method)
         {
             case 1:
