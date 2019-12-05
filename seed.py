@@ -1,6 +1,7 @@
 
 import sys;
 import numpy as np;
+from scipy.special import factorial as fac;
 from scipy.integrate import simps;
 from pathlib import Path;
 from math import sqrt;
@@ -85,7 +86,7 @@ def VortexLattice(x, y, n):
 
 
 
-def VortexLattice2(x, y, n):
+def VortexLatticeDeluxe(x, y, n):
     n = int(n);
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
@@ -98,10 +99,6 @@ def VortexLattice2(x, y, n):
     sigy = 0.1 * (y[-1] - y[0]);
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
-
-    # Momenta with some noise
-    # kx = (np.arange(0, int(n)) * noisex) * 2 * np.pi / sigx;
-    # ky = (np.arange(0, int(n)) * noisey) * 2 * np.pi / sigy;
 
     w = np.sqrt(1.0*np.ones(n) / fac(np.arange(2,n+2)));
     expargx = - ((x - midx) / sigx)**2;
@@ -187,7 +184,8 @@ seedName = sys.argv[7];
 x = np.linspace(x1, x2, nx);
 y = np.linspace(y1, y2, ny);
 
-if (seedName == 'rotating') : S = VortexLattice(x,y,1).reshape(nx*ny);
+if (seedName == 'rotating') : S = VortexLatticeDeluxe(x,y,15).reshape(nx*ny);
+elif (seedName == 'rotating1mode') : S = VortexLattice(x,y,1).reshape(nx*ny);
 elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(nx*ny);
 else : print('\nSeed name %s not recognized\n\n' % seedName);
 
