@@ -1,0 +1,34 @@
+# ALEX V. ANDRIATI BENCHMARK OF 2D GROSS-PITAEVSKII EQUATION
+# 
+# Here are some values resulting from the imaginary time propagation to
+# find the ground state of a 2D confined BEC. Before explain each column
+# the commun parameters are:
+#
+#   I. Isotropic harmonic confinement (x^2 + y^2) / 2
+#  II. Same interaction strength parameter g = 100
+# III. In dimensionless units kinect energy part - ( d^2/dx^2 + d^2/dy^2) / 2
+#  IV. Rotation part is given by i*\Omega(x*d/dy - y*d/dx) = - \Omega * Lz
+#   V. The macroscopic wave function is normalized to 1
+#  VI. Residue function is | \mu*\Psi - H(\Psi) |(x,y)
+#
+# The columns indicate the following quantities:
+#
+#   1. time step
+#   2. spatial domain boundary 1
+#   3. spatial domain boundary 2
+#   4. number of grid points in each direction
+#   5. rotation frequency \Omega
+#   6. Energy
+#   7. chemical potential
+#   8. average radius <r> where r = sqrt(x^2 + y^2)
+#   9. Maximun Residue on the grid
+#  10. Virial
+#  11. Number of vortices observed by the density profile
+#
+#
+0.00020 -6.4 6.4 257 0.40 3.9689195 5.6517790 1.9475677 0.00219 -0.00256 1
+0.00020 -6.4 6.4 257 0.57 3.8018996 5.3773083 2.0155882 0.00183 -0.00225 2
+0.00010 -8.0 8.0 401 0.65 3.6506129 5.1210918 2.0950156 0.00108 -0.00084 3
+0.00020 -6.4 6.4 257 0.71 3.4997148 4.8713688 2.1759820 0.00147 -0.00076 4
+0.00010 -6.4 6.4 257 0.76 3.3475310 4.6298784 2.2590835 0.00176  0.00114 5
+0.00015 -6.4 6.4 257 0.80 3.1904172 4.3510447 2.3894823 0.00236  0.00317 7
