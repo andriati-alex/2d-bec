@@ -43,5 +43,7 @@ double complex checkLU(int n, Carray upper, Carray lower, Carray mid);
 
 
 void triDiag(int, doublec, doublec, doublec, Carray, Carray);
+void LU(int, doublec, doublec, doublec, Carray, Carray);
+void triDiagLU(int, Carray, Carray, doublec, Carray, Carray);
 
 #endif

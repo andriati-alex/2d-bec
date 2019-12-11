@@ -162,7 +162,12 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         lowery,
         rhsx,
         rhsy,
-        aux;
+        aux,
+	Ux,
+	Lx,
+	Uy,
+	Ly;
+
 
     Rarray
         x,
@@ -200,6 +205,10 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
     uppery = carrDef(nx);
     lowerx = carrDef(ny);
     lowery = carrDef(nx);
+    Ux = carrDef(nx*ny);
+    Lx = carrDef(nx*ny);
+    Uy = carrDef(nx*ny);
+    Ly = carrDef(nx*ny);
 
     // Right hand size for each implicit direction
     rhsx = carrDef(nx);
@@ -230,6 +239,7 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
     {
         upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
         lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
+	LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
     }
 
     // Implicit on y-direction
@@ -238,6 +248,7 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
     {
         uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
         lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
+	LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
     }
 
 
@@ -265,14 +276,14 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         for (j = 0; j < ny; j++)
         {
             ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,rhsx);
-            triDiag(nx,upperx[j],lowerx[j],midx,rhsx,&linpart[j*nx]);
+            triDiagLU(nx,&Lx[j*nx],&Ux[j*nx],upperx[j],rhsx,&linpart[j*nx]);
         }
         carrCopy(nx*ny,linpart,S);
 
         for (i = 0; i < nx; i++)
         {
             ExplicitX(nx,ny,i,dt,hx,b,Ome,y,S,rhsy);
-            triDiag(ny,uppery[i],lowery[i],midy,rhsy,aux);
+            triDiagLU(ny,&Ly[i*ny],&Uy[i*ny],uppery[i],rhsy,aux);
             for (j = 0; j < ny; j++)
             {
                 linpart[i + j*nx] = aux[j];
@@ -323,6 +334,10 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
     free(rhsy);
     free(pot);
     free(aux);
+    free(Ux);
+    free(Lx);
+    free(Uy);
+    free(Ly);
 
     return N + 1;
 }
