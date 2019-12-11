@@ -114,7 +114,7 @@ def VortexLatticeDeluxe(x, y, n):
 
                 S[k,l] = S[k,l] + rl*w[i]*np.exp(ph);
 
-    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5));
+    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5)*np.pi/3);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
