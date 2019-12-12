@@ -386,7 +386,11 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         rhsx,
         rhsy,
         auxy,
-        auxx;
+        auxx,
+	Ux,
+	Lx,
+	Uy,
+	Ly;
 
     Rarray
         x,
@@ -424,6 +428,10 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     uppery = carrDef(nx);
     lowerx = carrDef(ny);
     lowery = carrDef(nx);
+    Ux = carrDef(nx*ny);
+    Lx = carrDef(nx*ny);
+    Uy = carrDef(nx*ny);
+    Ly = carrDef(nx*ny);
 
     // Right hand size for each implicit direction
     rhsx = carrDef(nx);
@@ -455,6 +463,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     {
         upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
         lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
+	LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
     }
 
     // Implicit on y-direction
@@ -463,6 +472,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     {
         uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
         lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
+	LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
     }
 
 
@@ -491,7 +501,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         {
             ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,auxx);
             ExplicitX_alongX(nx,ny,dt,hx,b,Ome,y[j],auxx,rhsx);
-            triDiag(nx,upperx[j],lowerx[j],midx,rhsx,&linpart[j*nx]);
+            triDiagLU(nx,&Lx[j*nx],&Ux[j*nx],upperx[j],rhsx,&linpart[j*nx]);
         }
         carrCopy(nx*ny,linpart,S);
 
@@ -501,7 +511,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
             {
                 rhsy[j] = S[i + j*nx];
             }
-            triDiag(ny,uppery[i],lowery[i],midy,rhsy,auxy);
+            triDiagLU(ny,&Ly[i*ny],&Uy[i*ny],uppery[i],rhsy,auxy);
             for (j = 0; j < ny; j++)
             {
                 linpart[i + j*nx] = auxy[j];
@@ -553,6 +563,10 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     free(pot);
     free(auxx);
     free(auxy);
+    free(Ux);
+    free(Lx);
+    free(Uy);
+    free(Ly);
 
     return N + 1;
 }
