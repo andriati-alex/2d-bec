@@ -125,6 +125,7 @@ double complex Csimps2D(int nx, int ny, Carray f, double hx, double hy)
 
     fy = carrDef(ny);
 
+#pragma omp parallel for private(j) schedule(static)
     for (j = 0; j < ny; j++)
     {
         // Integrate in x-direction and end up with a function of y
@@ -168,6 +169,7 @@ double Rsimps2D(int nx, int ny, Rarray f, double hx, double hy)
 
     fy = rarrDef(ny);
 
+#pragma omp parallel for private(j) schedule(static)
     for (j = 0; j < ny; j++)
     {
         // Integrate in x-direction and end up with a function of y

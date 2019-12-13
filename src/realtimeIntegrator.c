@@ -231,7 +231,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
 
 
 
-        if ( (k + 1) % 100 == 0 )
+        if ( (k + 1) % (N / 1000) == 0 )
         {
             E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
             carrAbs2(nx*ny,S,abs2);
@@ -506,7 +506,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
 
 
 
-        if ( (k + 1) % 100 == 0 )
+        if ( (k + 1) % ( N / 1000 ) == 0 )
         {
             E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
             carrAbs2(nx*ny,S,abs2);

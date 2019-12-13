@@ -1,8 +1,6 @@
 #ifndef _calculus_h
 #define _calculus_h
 
-#include <mkl.h>
-#include <mkl_dfti.h>
 #include <math.h>
 
 #include "memoryHandling.h"

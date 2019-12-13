@@ -318,7 +318,7 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         renormalize(nx,ny,S,hx,hy,norm);
 
 
-        if ( (k + 1) % 100 == 0 )
+        if ( (k + 1) % (N / 1000) == 0 )
         {
             E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
             mu = Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
@@ -555,8 +555,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         // Renormalize
         renormalize(nx,ny,S,hx,hy,norm);
 
-
-        if ( (k + 1) % 100 == 0 )
+        if ( (k + 1) % (N / 1000) == 0 )
         {
             E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
             mu = Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
