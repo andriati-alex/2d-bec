@@ -41,42 +41,28 @@ from math import sqrt;
 
 
 
-
-
-def VortexLattice(x, y, n):
-    n = int(n);
+def Random(x, y):
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
 
-    # generate random numbers in the range [-1,1]
-    # noisex = (np.random.random(int(n)) - 0.5) / 0.5;
-    # noisey = (np.random.random(int(n)) - 0.5) / 0.5;
+    real = 2 * (np.random.random(S.shape) - 0.5);
+    imag = 2 * (np.random.random(S.shape) - 0.5);
 
     # Localized by a Gaussian like-shape
-    sigx = 0.16 * (x[-1] - x[0]);
-    sigy = 0.16 * (y[-1] - y[0]);
+    sigx = 0.15 * (x[-1] - x[0]);
+    sigy = 0.15 * (y[-1] - y[0]);
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
 
-    # Momenta with some noise
-    # kx = (np.arange(0, int(n)) * noisex) * 2 * np.pi / sigx;
-    # ky = (np.arange(0, int(n)) * noisey) * 2 * np.pi / sigy;
-
-    w = (1.0 / np.arange(1, n + 1)**1.5);
     expargx = - ((x - midx) / sigx)**2;
     expargy = - ((y - midy) / sigy)**2;
 
-    for i in range(int(n)):
+    for k in range(y.size):
 
-        noise = np.pi * (np.random.random([y.size,x.size]) - 0.5) / 0.5;
-        for k in range(y.size):
-
-            for l in range(x.size):
-                ph = 1.0j * noise[k,l] + expargx[l] + expargy[k];
-                rl = 1.0;
-                for j in range((i + 1)%2): rl = rl * (x[l] + 1.0j*y[k]);
-
-                S[k,l] = S[k,l] + rl*w[i]*np.exp(ph);
+        for l in range(x.size):
+            ph = expargx[l] + expargy[k];
+            r = (x[l] + 1.0j * y[k])
+            S[k,l] = (0.6 + r) * np.exp(ph) * (real[k,l] + 1.0j * imag[k,l]);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
@@ -86,17 +72,21 @@ def VortexLattice(x, y, n):
 
 
 
-def VortexLatticeDeluxe(x, y, n):
+
+
+def VortexLattice(x, y, n):
     n = int(n);
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
 
     # generate random numbers in the range [-1,1]
     noise = np.pi * (np.random.random(int(n)) - 0.5) / 0.5;
+    # generate noise point-wise in the grid
+    gnoise = (np.random.random(S.shape)-0.5) * 0.5;
 
     # Localized by a Gaussian like-shape
-    sigx = 0.1 * (x[-1] - x[0]);
-    sigy = 0.1 * (y[-1] - y[0]);
+    sigx = 0.107 * (x[-1] - x[0]);
+    sigy = 0.107 * (y[-1] - y[0]);
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
 
@@ -112,9 +102,9 @@ def VortexLatticeDeluxe(x, y, n):
                 ph = 1.0j * noise[i] + expargx[l] + expargy[k];
                 rl = (x[l] + 1.0j*y[k])**(i+1);
 
-                S[k,l] = S[k,l] + rl*w[i]*np.exp(ph);
+                S[k,l] = S[k,l] + (rl + gnoise[k,l])*w[i]*np.exp(ph);
 
-    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5)*np.pi/3);
+    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5)*np.pi/4);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
@@ -125,24 +115,15 @@ def VortexLatticeDeluxe(x, y, n):
 
 
 
-
-def NoRotation(x, y):
+def stationary(x, y):
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
-
-    # generate random numbers in the range [-1,1]
-    # noisex = (np.random.random(int(n)) - 0.5) / 0.5;
-    # noisey = (np.random.random(int(n)) - 0.5) / 0.5;
 
     # Localized by a Gaussian like-shape
     sigx = 0.14 * (x[-1] - x[0]);
     sigy = 0.14 * (y[-1] - y[0]);
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
-
-    # Momenta with some noise
-    # kx = (np.arange(0, int(n)) * noisex) * 2 * np.pi / sigx;
-    # ky = (np.arange(0, int(n)) * noisey) * 2 * np.pi / sigy;
 
     expargx = - ((x - midx) / sigx)**2;
     expargy = - ((y - midy) / sigy)**2;
@@ -184,9 +165,9 @@ seedName = sys.argv[7];
 x = np.linspace(x1, x2, nx);
 y = np.linspace(y1, y2, ny);
 
-if (seedName == 'rotating') : S = VortexLatticeDeluxe(x,y,15).reshape(nx*ny);
-elif (seedName == 'rotating1mode') : S = VortexLattice(x,y,1).reshape(nx*ny);
+if (seedName == 'rotating') : S = VortexLattice(x,y,25).reshape(nx*ny);
 elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(nx*ny);
+elif (seedName == 'random') : S = Random(x,y).reshape(nx*ny);
 else : print('\nSeed name %s not recognized\n\n' % seedName);
 
 folder = str(Path.home()) + '/programs/2d-bec/input/';
@@ -202,7 +183,7 @@ f.close();
 
 f = open(folder + seedName + '_eq.dat', "w");
 
-if (seedName == 'stationary') : f.write("-0.5 0.0 10.0 1.0 1.0 0.0");
-else : f.write("-0.5 0.8 50.0 1.0 1.0 0.0");
+if (seedName == 'stationary') : f.write("-0.5 0.0 10.0 1.0 1.0 0.0 0.0");
+else : f.write("-0.5 0.8 50.0 1.0 1.0 0.0 0.0");
 
 f.close();
