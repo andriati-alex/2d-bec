@@ -76,21 +76,23 @@ def Random(x, y):
 
 def VortexLattice(x, y, n):
     n = int(n);
+    Lx = x[-1] - x[0];
+    Ly = y[-1] - y[0];
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
 
     # generate random numbers in the range [-1,1]
     noise = np.pi * (np.random.random(int(n)) - 0.5) / 0.5;
     # generate noise point-wise in the grid
-    gnoise = (np.random.random(S.shape)-0.5) * 0.5;
+    gnoise = (np.random.random(S.shape)-0.5) * 0.2;
 
     # Localized by a Gaussian like-shape
-    sigx = 0.107 * (x[-1] - x[0]);
-    sigy = 0.107 * (y[-1] - y[0]);
+    sigx = 0.33 * sqrt(Lx);
+    sigy = 0.33 * sqrt(Ly);
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
 
-    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(2,n+2)));
+    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(1,n+1)));
     expargx = - ((x - midx) / sigx)**2;
     expargy = - ((y - midy) / sigy)**2;
 
@@ -165,7 +167,7 @@ seedName = sys.argv[7];
 x = np.linspace(x1, x2, nx);
 y = np.linspace(y1, y2, ny);
 
-if (seedName == 'rotating') : S = VortexLattice(x,y,25).reshape(nx*ny);
+if (seedName == 'rotating') : S = VortexLattice(x,y,35).reshape(nx*ny);
 elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(nx*ny);
 elif (seedName == 'random') : S = Random(x,y).reshape(nx*ny);
 else : print('\nSeed name %s not recognized\n\n' % seedName);
