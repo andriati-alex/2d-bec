@@ -7,6 +7,25 @@
 
 
 
+void TimePrint(double t)
+{
+    
+    // format and print time in days / hours / minutes
+
+    int
+        tt = (int) t,
+        hours = 0,
+        mins  = 0;
+
+    if ( tt / 3600  > 0 )
+    { hours = tt / 3600;  tt = tt % 3600;  }
+
+    if ( tt / 60    > 0 )
+    { mins  = tt / 60;    tt = tt % 60;    }
+
+    printf(" %d hour(s) %d minute(s)",hours,mins);
+}
+
 
 
 void ReachNewLine(FILE * f)
@@ -423,13 +442,15 @@ int main(int argc, char * argv[])
                 N = SplitStepPR(EQ, N, dt, S);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with Peaceman-Rachford");
-                printf(" : %.0lf seconds\n", time_used);
+                printf(" : %.0lf sec = ",time_used);
+		TimePrint(time_used);
                 break;
             case 2:
                 N = SplitStepDYakonov(EQ, N, dt, S);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with D'Yakonov");
-                printf(" : %.0lf seconds\n", time_used);
+                printf(" : %.0lf sec = ",time_used);
+		TimePrint(time_used);
                 break;
         }
 
@@ -457,13 +478,15 @@ int main(int argc, char * argv[])
                 N = RealSplitStepPR(EQ, N, dt, S, skipframes, fname);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with Peaceman-Rachford");
-                printf(" : %.0lf seconds\n", time_used);
+                printf(" : %.0lf sec = ",time_used);
+		TimePrint(time_used);
                 break;
             case 2:
                 N = RealSplitStepDYakonov(EQ, N, dt, S, skipframes, fname);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with D'Yakonov");
-                printf(" : %.0lf seconds\n", time_used);
+                printf(" : %.0lf sec = ",time_used);
+		TimePrint(time_used);
                 break;
         }
 
