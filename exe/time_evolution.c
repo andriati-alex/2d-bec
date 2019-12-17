@@ -290,6 +290,13 @@ int main(int argc, char * argv[])
 
     // open file with values of equation's parameters
 
+    printf("\n\n");
+    printf("\t\t*********************************************\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*           SEARCHING SETUP FILES           *\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*********************************************\n");
+
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_eq.dat");
@@ -305,7 +312,7 @@ int main(int argc, char * argv[])
     }
     else
     {
-        printf(" ....... Found !\n");
+        printf(" ....... Found !");
     }
 
 
@@ -327,7 +334,7 @@ int main(int argc, char * argv[])
     }
     else
     {
-        printf(" ... Found !\n");
+        printf(" ... Found !");
     }
 
 
@@ -349,7 +356,7 @@ int main(int argc, char * argv[])
     }
     else
     {
-        printf(" ..... Found !\n");
+        printf(" ..... Found !");
     }
 
 
@@ -386,20 +393,7 @@ int main(int argc, char * argv[])
     S = carrDef(nx*ny); // solution at grid points
     abs2 = rarrDef(nx*ny);
 
-
-
-
-
-
-
-
-
-
-    /*  ===============================================================
-     
-                       SETUP INITIAL DATA TO PROPAGATE
-     
-        ===============================================================  */
+    // SETUP INITIAL DATA TO PROPAGATE
 
     for (i = 0; i < nx*ny; i++)
     {
@@ -410,10 +404,33 @@ int main(int argc, char * argv[])
 
     fclose(orb_file);
 
-    printf("\nGot Initial condition, with norm =");
-    printf(" %.10lf\n", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
-    printf("nx = %d | ny = %d | hx = %.10lf | hy = %.10lf\n",
-           nx, ny, EQ->hx, EQ->hy);
+    printf("\nGot Initial condition with || . || =");
+    printf(" %.6lf\n", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
+
+
+
+
+
+
+
+
+
+
+    printf("\n\n\n\n");
+    printf("\t\t*********************************************\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*            GRID SPECIFICATIONS            *\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*********************************************\n");
+    printf("\n");
+
+    printf("x = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
+	   EQ->x[0],EQ->x[1],EQ->x[nx-2],EQ->x[nx-1]);
+    printf("%d points for x-direction | x-grid-spacing = %.3lf\n",nx,EQ->hx);
+
+    printf("y = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
+	   EQ->y[0],EQ->y[1],EQ->y[ny-2],EQ->y[ny-1]);
+    printf("%d points for y-direction | y-grid-spacing = %.3lf",ny,EQ->hy);
 
 
 
@@ -430,12 +447,14 @@ int main(int argc, char * argv[])
      
         ===============================================================  */
 
+    printf("\n\n\n");
+    sepline();
+
     start = omp_get_wtime();
 
     if (timeinfo == 'i' || timeinfo == 'I')
     {
-        sepline();
-        printf("\nDoing imaginary time integration #%d\n\n", 1);
+        printf("\nImaginary time integration #%d\n\n", 1);
         switch (method)
         {
             case 1:
@@ -465,7 +484,6 @@ int main(int argc, char * argv[])
 
     if (timeinfo == 'r' || timeinfo == 'R')
     {
-        sepline();
         printf("\nDoing real time integration\n\n");
 
         // Record data
