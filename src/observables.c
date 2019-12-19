@@ -242,9 +242,10 @@ double Interacting(int nx, int ny, double hx, double hy, double g, Carray f)
 
 
 double Virial(int nx, int ny, double hx, double hy, double b, double g,
-       Rarray V, Carray f)
+       Rarray V, char Vname [], Carray f)
 {
     int
+        p,
         i,
         j;
 
@@ -257,7 +258,10 @@ double Virial(int nx, int ny, double hx, double hy, double b, double g,
     Vtrap = Potential(nx,ny,hx,hy,V,f);
     Vint = Interacting(nx,ny,hx,hy,g,f);
 
-    return - 2 * K + 2 * Vtrap - 2 * Vint;
+    if (strcmp(Vname,"quartic") == 0) p = 4;
+    else p = 2;
+
+    return - 2 * K + p * Vtrap - 2 * Vint;
 }
 
 

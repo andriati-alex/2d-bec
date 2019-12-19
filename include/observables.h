@@ -29,7 +29,7 @@ double Interacting(int nx, int ny, double hx, double hy, double g, Carray f);
 
 
 double Virial(int nx, int ny, double hx, double hy, double b, double g,
-       Rarray V, Carray f);
+       Rarray V, char Vname [], Carray f);
 
 
 

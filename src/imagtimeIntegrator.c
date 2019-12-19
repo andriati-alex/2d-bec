@@ -325,7 +325,7 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
             meanr = MeanR(nx,ny,S,hx,hy,x,y);
             maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
             avgres = AvgResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
-            vir = Virial(nx,ny,hx,hy,b,g,V,S);
+            vir = Virial(nx,ny,hx,hy,b,g,V,EQ->Vname,S);
 
             printf("%5.1lf%%   %11.7lf",(100.0*k)/N,creal(E));
             printf("  %11.7lf",creal(mu));
@@ -562,7 +562,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
             meanr = MeanR(nx,ny,S,hx,hy,x,y);
             maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
             avgres = AvgResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
-            vir = Virial(nx,ny,hx,hy,b,g,V,S);
+            vir = Virial(nx,ny,hx,hy,b,g,V,EQ->Vname,S);
 
             printf("%5.1lf%%   %11.7lf",(100.0*k)/N,creal(E));
             printf("  %11.7lf",creal(mu));
