@@ -430,7 +430,8 @@ int main(int argc, char * argv[])
 
     printf("y = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
 	   EQ->y[0],EQ->y[1],EQ->y[ny-2],EQ->y[ny-1]);
-    printf("%d points for y-direction | y-grid-spacing = %.3lf",ny,EQ->hy);
+    printf("%d points for y-direction | y-grid-spacing = %.3lf\n",ny,EQ->hy);
+    printf("Final time %.2lf in steps of %.6lf",N*dt,dt);
 
 
 
