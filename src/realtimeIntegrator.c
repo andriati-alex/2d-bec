@@ -12,8 +12,8 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         k,
         nx,
         ny,
-	tid,
-	nthreads,
+        tid,
+        nthreads,
         countFrames;
 
     double
@@ -43,10 +43,10 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         rhsx,
         rhsy,
         auxy,
-	Ux,
-	Lx,
-	Uy,
-	Ly;
+        Ux,
+        Lx,
+        Uy,
+        Ly;
 
     Rarray
         x,
@@ -56,8 +56,8 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         abs2;
 
     FILE
-	* f,
-	* ftime;
+        * f,
+        * ftime;
 
 
 
@@ -146,7 +146,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
     {
         upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
         lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
-	LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
+        LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
     }
 
     // Implicit on y-direction
@@ -155,7 +155,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
     {
         uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
         lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
-	LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
+        LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
     }
 
 
@@ -212,7 +212,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
             ExplicitX(nx,ny,i,dt,hx,b,Ome,y,linpart,rhsy);
             triDiagLU(ny,&Ly[i*ny],&Uy[i*ny],uppery[i],rhsy,auxy);
             for (j = 0; j < ny; j++) S[i + j*nx] = auxy[j];
-	}
+        }
 
         free(rhsy);
         free(rhsx);
@@ -288,8 +288,8 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         k,
         nx,
         ny,
-	tid,
-	nthreads,
+        tid,
+        nthreads,
         countFrames;
 
     double
@@ -307,7 +307,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         midy;
 
     char
-	fname[100];
+        fname[100];
 
     Carray
         stepexp,
@@ -320,10 +320,10 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         rhsy,
         auxy,
         auxx,
-	Ux,
-	Lx,
-	Uy,
-	Ly;
+        Ux,
+        Lx,
+        Uy,
+        Ly;
 
     Rarray
         x,
@@ -333,8 +333,8 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         abs2;
 
     FILE
-	* f,
-	* ftime;
+        * f,
+        * ftime;
 
 
 
@@ -418,7 +418,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
     {
         upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
         lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
-	LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
+        LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
     }
 
     // Implicit on y-direction
@@ -427,7 +427,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
     {
         uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
         lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
-	LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
+        LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
     }
 
 
@@ -459,12 +459,12 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
 	// EVOLUTION OF LINEAR PART USING ADI-D'YAKONOV METHOD
 
 #pragma omp parallel private(j,i,rhsx,rhsy,auxy,auxx,tid,nthreads)
-	{
+        {
 
-	rhsx = carrDef(nx);
-	rhsy = carrDef(ny);
-	auxy = carrDef(ny);
-	auxx = carrDef(nx);
+        rhsx = carrDef(nx);
+        rhsy = carrDef(ny);
+        auxy = carrDef(ny);
+        auxx = carrDef(nx);
 
         tid = omp_get_thread_num();        // thread Id
         nthreads = omp_get_num_threads();  // number of threads being used
@@ -476,7 +476,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
             triDiagLU(nx,&Lx[j*nx],&Ux[j*nx],upperx[j],rhsx,&linpart[j*nx]);
         }
 
-	// wait for all threads to solve for y-direction implicitly
+        // wait for all threads to solve for y-direction implicitly
 
 #pragma omp barrier
 
@@ -487,12 +487,12 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
             for (j = 0; j < ny; j++) S[i + j*nx] = auxy[j];
         }
 
-	free(rhsy);
-	free(rhsx);
-	free(auxy);
-	free(auxx);
+        free(rhsy);
+        free(rhsx);
+        free(auxy);
+        free(auxx);
 
-	}
+        }
 
         carrCopy(nx*ny,S,linpart);
 
