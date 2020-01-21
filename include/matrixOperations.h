@@ -59,16 +59,6 @@ void setValueCCSrmat(int n, int i, int j, int col, double x, CCSrmat M);
 
 
 
-CCScmat tri2CCS(int n, Carray upper, Carray lower, Carray mid);
-/* Fill a Sparse Matrix in Compressed Column Storage format from a tridiagonal
- * ***************************************************************************
- *
- * n the dimension of the matrix. Returns a pointer to CCS struct
- *
- *****************************************************************************/
-
-
-
 
 
 /*          **********************************************          */
@@ -116,11 +106,6 @@ void CCScmatvec(int n, Carray vals, int * cols, int m, Carray vec, Carray ans);
 
 
 void CCSrmatvec(int n, Rarray vals, int * cols, int m, Rarray vec, Rarray ans);
-
-
-
-int HermitianInv(int M, Cmatrix A, Cmatrix A_inv);
-/* Invert an hermitian matrix (uses LAPACK routines) */
 
 
 #endif

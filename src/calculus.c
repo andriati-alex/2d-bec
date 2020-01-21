@@ -106,7 +106,7 @@ double complex Csimps2D(int nx, int ny, Carray f, double hx, double hy)
 /** INTEGRATION OF A FUNCTION OF 2 VARIABLES
   * ----------------------------------------
   *
-  * Here the function must be stored in a vector, where given point a
+  * Here the function must be stored in a vector, where given a
   * point in the grid (xi,yj) then
   *
   *     funtion(xi,yj) = f[i + nx * j]
@@ -218,9 +218,10 @@ void renormalize(int nx, int ny, Carray f, double hx, double hy, double norm)
 void DfDx(int nx, int ny, Carray f, double hx, Carray dfdx)
 {
 
-/** Compute partial derivative in x-direction
+/** Compute partial derivative in x-direction using a fourth order scheme
+  * assuming the function to vanish in boundary points
   *
-  * Output parameter : dfdx is a  function of the
+  * Output parameter : dfdx
   * grid points df/dx(xi,yi) = dfdx[i + j*nx] **/
 
     int
@@ -266,9 +267,10 @@ void DfDx(int nx, int ny, Carray f, double hx, Carray dfdx)
 void DfDy(int nx, int ny, Carray f, double hy, Carray dfdy)
 {
 
-/** Compute partial derivative in x-direction
+/** Compute partial derivative in y-direction with fourth order scheme
+  * assuming the function to vanish at boundary points 
   *
-  * Output parameter : dfdy is a  function of the
+  * Output parameter : dfdy
   * grid points df/dy(xi,yi) = dfdy[i + j*nx] **/
 
     int
@@ -295,13 +297,13 @@ void DfDy(int nx, int ny, Carray f, double hy, Carray dfdy)
         // the domain the function is assumed to give  zero
 
         s = 0*nx;
-        s1  = 1*nx;
-        s2  = 2*nx;
+        s1 = 1*nx;
+        s2 = 2*nx;
         dfdy[i+s]   = ( 0 - f[i+s2] + 8 * (f[i+s1] - 0) ) * r;
 
         s = 1*nx;
-        s1  = 2*nx;
-        s2  = 3*nx;
+        s1 = 2*nx;
+        s2 = 3*nx;
         sm1 = 0*nx;
         dfdy[i+s]   = ( 0 - f[i+s2] + 8 * (f[i+s1] - f[i+sm1]) ) * r;
 

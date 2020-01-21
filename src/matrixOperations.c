@@ -117,63 +117,11 @@ void setValueCCSrmat(int n, int i, int j, int col, double x, CCSrmat M)
 
 
 
-/*          ***********************************************
-
-             SPECIAL ROUTINES FOR FINITE DIFFERENCE SCHEME
-
-            ***********************************************          */
-
-
-
-
-
-CCScmat tri2CCS(int n, Carray upper, Carray lower, Carray mid)
-{
-
-/** Configure a CCS matrix from a tridigonal one, being passed through
-  * 3  vectors  correponding to diagonals.  Return the address  of the
-  * structure allocated **/
-
-    unsigned int j;
-
-    CCScmat M;
-
-    M = ccscmatDef(n,3);
-
-    // first and last rows have just 2 nonzero elements
-    // then must be configured separately
-    M->vec[0]         = mid[0];
-    M->vec[n]         = upper[0];
-    M->vec[2 * n]     = 0;
-    M->vec[3 * n - 1] = 0;
-
-    for (j = 1; j < n; j++)                 { M->vec[j] = lower[j - 1];     }
-    for (j = n + 1; j < 2 * n; j++)         { M->vec[j] = mid[j - n];       }
-    for (j = 2 * n + 1; j < 3 * n - 1; j++) { M->vec[j] = upper[j - 2 * n]; }
-
-    // first and last rows have just 2 nonzero elements
-    // then must be configured separately
-    M->col[0]         = 0;
-    M->col[n]         = 1;
-    M->col[2 * n]     = 0;
-    M->col[3 * n - 1] = 0;
-
-    for (j = 1; j < n; j++)                 { M->col[j] = j - 1; }
-    for (j = n + 1; j < 2 * n; j++)         { M->col[j] = j - n; }
-    for (j = 2 * n + 1; j < 3 * n - 1; j++) { M->col[j] = j + 1 - 2 * n; }
-
-    return M;
-}
-
-
-
-
-
-/*          **********************************************
+           /**********************************************
 
             MATRIX-VECTOR AND MATRIX-MATRIX MULTIPLICATION
 
-            **********************************************          */
+            **********************************************/
 
 
 
@@ -304,83 +252,4 @@ void CCSrmatvec(int n, Rarray vals, int * cols, int m, Rarray vec, Rarray ans)
         for (l = 1; l < m; l++) x = x + vals[i+l*n] * vec[cols[i+l*n]];
         ans[i] = x;
     }
-}
-
-
-
-/*          ***********************************************
-
-                          Inversion of matrices
-
-            ***********************************************          */
-
-
-
-int HermitianInv(int M, Cmatrix A, Cmatrix A_inv)
-{
-
-/** Use Lapack routine to solve systems of equations with the
-  * right-hand-side being identity matrix  to get the inverse **/
-
-    int i, // counter
-        j, // counter
-        l; // lapack success parameter
-
-    int
-        * ipiv;
-
-    CMKLarray
-        ArrayForm, // To call zhesv routine use row major layout of Matrix
-        Id;        // Identity matrix in row major layout
-
-
-
-    ipiv = (int *) malloc(M * sizeof(int));
-
-    ArrayForm = cmklDef(M * M);
-
-    Id = cmklDef(M * M);
-
-
-
-    for (i = 0; i < M; i++)
-    {
-        // Setup (L)ower triangular part as a Row-Major-Array to use lapack
-        ArrayForm[i * M + i].real = creal(A[i][i]);
-        ArrayForm[i * M + i].imag = 0;
-        Id[i * M + i].real = 1;
-        Id[i * M + i].imag = 0;
-
-        for (j = 0; j < i; j++)
-        {
-            ArrayForm[i * M + j].real = creal(A[i][j]);
-            ArrayForm[i * M + j].imag = cimag(A[i][j]);
-
-            ArrayForm[j * M + i].real = 0; // symbolic values
-            ArrayForm[j * M + i].imag = 0; // for upper triangular part
-
-            Id[i * M + j].real = 0;
-            Id[i * M + j].imag = 0;
-
-            Id[j * M + i].real = 0;
-            Id[j * M + i].imag = 0;
-        }
-    }
-
-    l = LAPACKE_zhesv(LAPACK_ROW_MAJOR, 'L', M, M, ArrayForm, M, ipiv, Id, M);
-
-    for (i = 0; i < M; i++)
-    {
-        // Transcript the result back to matrix form
-        for (j = 0; j < M; j++)
-        {
-            A_inv[i][j] = Id[i * M + j].real + I * Id[i * M + j].imag;
-        }
-    }
-
-    free(ipiv);
-    free(Id);
-    free(ArrayForm);
-
-    return l;
 }

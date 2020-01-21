@@ -14,7 +14,7 @@ doublec Chem(int nx, int ny, double hx, double hy, double b, double Ome,
   *  To compute the energy the value passed on g must be the contact
   *  interaction strength divided by 2, otherwise gives the chemical
   *  potential of the system. It divides by the norm of the function
-  *  in the end to enforce the result obtained is the particle average
+  *  in the end to enforce the result to be the particle average
   *
   *  Parameters
   *

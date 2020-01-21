@@ -60,15 +60,4 @@ void rarr_inline(FILE * f, int M, Rarray v);
   * current buffer line. After done print linebreak **/
 
 
-
-void cmat_txt (char fname [], int m, int n, Cmatrix A);
-/** Record the matrix A of complex elements with m rows and n columns
-  * in a text file of called 'fname'. **/
-
-
-
-void cmat_txt_T (char fname [], int m, int n, Cmatrix A);
-/** Record the transpose of matrix A of complex elements with m rows
-  * and n columns in a text file of called 'fname'. **/
-
 #endif

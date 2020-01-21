@@ -13,18 +13,6 @@ void sepline()
 
 
 
-
-
-/**     =============================================================
-
-                             PRINTING ON SCREEN
-
-        =============================================================     **/
-
-
-
-
-
 void cprint(double complex z)
 {
 
@@ -32,8 +20,6 @@ void cprint(double complex z)
 
     printf("(%9.2E,%9.2E )", creal(z), cimag(z));
 }
-
-
 
 
 
@@ -63,8 +49,6 @@ void carr_print(int n, Carray v)
 
 
 
-
-
 void rarr_print(int n, Rarray v)
 {
 
@@ -88,8 +72,6 @@ void rarr_print(int n, Rarray v)
 
     printf("\n");
 }
-
-
 
 
 
@@ -119,8 +101,6 @@ void cmat_print(int m, int n, Cmatrix M)
 
 
 
-
-
 void rmat_print(int m, int n, Rmatrix M)
 {
 
@@ -144,18 +124,6 @@ void rmat_print(int m, int n, Rmatrix M)
 
     printf("\n");
 }
-
-
-
-
-
-/**     =============================================================
-
-                              PRINTING ON FILES
-
-        =============================================================     **/
-
-
 
 
 
@@ -206,8 +174,6 @@ void carr_txt(char fname [], int M, Carray v)
 
 
 
-
-
 void rarr_txt(char fname [], int M, Rarray v)
 {
 
@@ -232,8 +198,6 @@ void rarr_txt(char fname [], int M, Rarray v)
 
     fclose(data_file);
 }
-
-
 
 
 
@@ -272,12 +236,10 @@ void carr_inline(FILE * f, int M, Carray v)
 
 
 
-
-
 void rarr_inline(FILE * f, int M, Rarray v)
 {
 
-/** Given a opened file write complex array in current line of buffer **/
+/** Given a opened file write real array in current line of buffer **/
 
     int
         j;
@@ -292,118 +254,4 @@ void rarr_inline(FILE * f, int M, Rarray v)
     for (j = 0; j < M; j ++) fprintf(f, "%.15E ", v[j]);
 
     fprintf(f, "\n");
-}
-
-
-
-
-
-void cmat_txt (char fname [], int m, int n, Cmatrix A)
-{
-
-    int
-        i,
-        j;
-
-    double
-        real,
-        imag;
-
-    FILE
-        * f = fopen(fname, "w");
-
-
-
-    if (f == NULL)
-    {   // impossible to open file with the given name
-        printf("\n\n\n\tERROR: impossible to open file %s\n\n", fname);
-        exit(EXIT_FAILURE);
-    }
-
-
-
-    for (i = 0; i < m - 1; i++)
-    {
-
-        for (j = 0; j < n; j++)
-        {
-
-            real = creal(A[i][j]);
-            imag = cimag(A[i][j]);
-
-            if (imag >= 0) fprintf(f, "(%.15E+%.15Ej) ", real, imag);
-            else           fprintf(f, "(%.15E%.15Ej) ", real, imag);
-        }
-
-        fprintf(f, "\n");
-    }
-
-    for (j = 0; j < n; j++)
-    {
-
-        real = creal(A[m-1][j]);
-        imag = cimag(A[m-1][j]);
-
-        if (imag >= 0) fprintf(f, "(%.15E+%.15Ej) ", real, imag);
-        else           fprintf(f, "(%.15E%.15Ej) ", real, imag);
-    }
-
-    fclose(f);
-}
-
-
-
-
-
-void cmat_txt_T (char fname [], int m, int n, Cmatrix A)
-{
-
-    int
-        i,
-        j;
-
-    double
-        real,
-        imag;
-
-    FILE
-        * f = fopen(fname, "w");
-
-
-
-    if (f == NULL)
-    {   // impossible to open file with the given name
-        printf("\n\n\n\tERROR: impossible to open file %s\n\n", fname);
-        exit(EXIT_FAILURE);
-    }
-
-
-
-    for (j = 0; j < n - 1; j++)
-    {
-
-        for (i = 0; i < m; i++)
-        {
-
-            real = creal(A[i][j]);
-            imag = cimag(A[i][j]);
-
-            if (imag >= 0) fprintf(f, "(%.15E+%.15Ej) ", real, imag);
-            else           fprintf(f, "(%.15E%.15Ej) ", real, imag);
-        }
-
-        fprintf(f, "\n");
-    }
-
-    for (i = 0; i < m; i++)
-    {
-
-        real = creal(A[i][n-1]);
-        imag = cimag(A[i][n-1]);
-
-        if (imag >= 0) fprintf(f, "(%.15E+%.15Ej) ", real, imag);
-        else           fprintf(f, "(%.15E%.15Ej) ", real, imag);
-    }
-
-    fclose(f);
 }
