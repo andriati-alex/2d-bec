@@ -117,7 +117,7 @@ def VortexLattice(x, y, n):
 
 
 
-def stationary(x, y):
+def gaussian(x, y):
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
 
@@ -130,11 +130,9 @@ def stationary(x, y):
     expargx = - ((x - midx) / sigx)**2;
     expargy = - ((y - midy) / sigy)**2;
 
-    noise = np.pi * (np.random.random([y.size,x.size]) - 0.5) / 0.5;
-
     for k in range(y.size):
         for l in range(x.size):
-            ph = 1.0j * noise[k,l] + expargx[l] + expargy[k];
+            ph = expargx[l] + expargy[k];
             S[k,l] = np.exp(ph);
 
     abs2 = abs(S)**2;
@@ -168,7 +166,7 @@ x = np.linspace(x1, x2, nx);
 y = np.linspace(y1, y2, ny);
 
 if (seedName == 'rotating') : S = VortexLattice(x,y,35).reshape(nx*ny);
-elif (seedName == 'stationary') : S = NoRotation(x,y).reshape(nx*ny);
+elif (seedName == 'gaussian') : S = gaussian(x,y).reshape(nx*ny);
 elif (seedName == 'random') : S = Random(x,y).reshape(nx*ny);
 else : print('\nSeed name %s not recognized\n\n' % seedName);
 

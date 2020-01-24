@@ -16,9 +16,15 @@ double Rsimps2D(int, int, Rarray, double, double);
 
 void DfDx(int, int, Carray, double, Carray);
 
+void DfDx_real(int, int, Rarray, double, Rarray);
+
 void DfDy(int, int, Carray, double, Carray);
 
+void DfDy_real(int, int, Rarray, double, Rarray);
+
 void renormalize(int, int, Carray, double, double, double);
+
+void renormalizeReal(int, int, Rarray, double, double, double);
 
 
 

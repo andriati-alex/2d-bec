@@ -215,6 +215,34 @@ void renormalize(int nx, int ny, Carray f, double hx, double hy, double norm)
 
 
 
+void renormalizeReal(int nx, int ny, Rarray f, double hx, double hy,
+                     double norm)
+{
+
+    int
+        i;
+
+    double
+        renorm;
+
+    Rarray
+        f2;
+
+    f2 = rarrDef(nx*ny);
+
+    for (i = 0; i < nx*ny; i++) f2[i] = f[i] * f[i];
+
+    renorm = norm * sqrt(1.0 / Rsimps2D(nx,ny,f2,hx,hy));
+
+    for (i = 0; i < nx*ny; i++) f[i] = f[i] * renorm;
+
+    free(f2);
+}
+
+
+
+
+
 void DfDx(int nx, int ny, Carray f, double hx, Carray dfdx)
 {
 
@@ -264,7 +292,128 @@ void DfDx(int nx, int ny, Carray f, double hx, Carray dfdx)
 
 
 
+void DfDx_real(int nx, int ny, Rarray f, double hx, Rarray dfdx)
+{
+
+/** Compute partial derivative in x-direction using a fourth order scheme
+  * assuming the function to vanish in boundary points
+  *
+  * Output parameter : dfdx
+  * grid points df/dx(xi,yi) = dfdx[i + j*nx] **/
+
+    int
+        i,
+        j,
+        s;
+
+    double
+        r;
+
+    r = 1.0 / (12 * hx); // ratio for a fourth-order scheme
+
+    for (j = 0; j < ny; j++)
+    {
+        s = j * nx; // stride to get the yj grid line
+
+        // Do separately the computation near  the boundary
+        // since involves evaluation where the  'f' is zero
+        // The zeros are kept to track the rule in the loop
+        // every time the loop yield an evaluation  out  of
+        // the domain the function is assumed to give  zero
+
+        dfdx[0+s]   = ( 0 - f[2+s] + 8 * (f[1+s] - 0) ) * r;
+
+        dfdx[1+s]   = ( 0 - f[3+s] + 8 * (f[2+s] - f[0+s]) ) * r;
+
+        dfdx[nx-2+s] = ( f[nx-4+s] - 0 + 8 * (f[nx-1+s] - f[nx-3+s]) ) * r;
+
+        dfdx[nx-1+s] = ( f[nx-3+s] - 0 + 8 * (0 - f[nx-2+s]) ) * r;
+
+        for (i = 2; i < nx - 2; i++)
+        {
+            dfdx[i+s] = ( f[i-2+s] - f[i+2+s] + 8*(f[i+1+s] - f[i-1+s]) )*r;
+        }
+    }
+
+}
+
+
+
+
+
 void DfDy(int nx, int ny, Carray f, double hy, Carray dfdy)
+{
+
+/** Compute partial derivative in y-direction with fourth order scheme
+  * assuming the function to vanish at boundary points 
+  *
+  * Output parameter : dfdy
+  * grid points df/dy(xi,yi) = dfdy[i + j*nx] **/
+
+    int
+        i,
+        j,
+        s,
+        s1,
+        s2,
+        sm1,
+        sm2;
+
+    double
+        r;
+
+    r = 1.0 / (12 * hy); // ratio for a fourth-order scheme
+
+    for (i = 0; i < nx; i++)
+    {
+
+        // Do separately the computation near  the boundary
+        // since involves evaluation where the  'f' is zero
+        // The zeros are kept to track the rule in the loop
+        // every time the loop yield an evaluation  out  of
+        // the domain the function is assumed to give  zero
+
+        s = 0*nx;
+        s1 = 1*nx;
+        s2 = 2*nx;
+        dfdy[i+s]   = ( 0 - f[i+s2] + 8 * (f[i+s1] - 0) ) * r;
+
+        s = 1*nx;
+        s1 = 2*nx;
+        s2 = 3*nx;
+        sm1 = 0*nx;
+        dfdy[i+s]   = ( 0 - f[i+s2] + 8 * (f[i+s1] - f[i+sm1]) ) * r;
+
+        s = (ny-2)*nx;
+        s1  = (ny-1)*nx;
+        sm1 = (ny-3)*nx;
+        sm2 = (ny-4)*nx;
+        dfdy[i+s] = ( f[i+sm2] - 0 + 8 * (f[i+s1] - f[i+sm1]) ) * r;
+
+        s = (ny-1)*nx;
+        sm1 = (ny-2)*nx;
+        sm2 = (ny-3)*nx;
+        dfdy[i+s] = ( f[i+sm2] - 0 + 8 * (0 - f[i+sm1]) ) * r;
+
+        for (j = 2; j < ny - 2; j++)
+        {
+            s = j * nx; // stride to get the yj point
+            s1  = (j + 1) * nx;
+            s2  = (j + 2) * nx;
+            sm1 = (j - 1) * nx;
+            sm2 = (j - 2) * nx;
+
+            dfdy[i+s] = ( f[i+sm2] - f[i+s2] + 8*(f[i+s1] - f[i+sm1]) )*r;
+        }
+    }
+
+}
+
+
+
+
+
+void DfDy_real(int nx, int ny, Rarray f, double hy, Rarray dfdy)
 {
 
 /** Compute partial derivative in y-direction with fourth order scheme
