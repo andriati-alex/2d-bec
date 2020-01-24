@@ -520,7 +520,7 @@ int RealSplitStepDYakonov(EqDataPkg EQ, int N, double dt, Carray S,
         if ( countFrames == skipFrames + 1 )
         {
             carr_inline(f,nx*ny,S);
-	    fprintf(ftime,"\n%.5lf",(k+1)*dt);
+            fprintf(ftime,"\n%.5lf",(k+1)*dt);
             countFrames = 1;
         }
         else
