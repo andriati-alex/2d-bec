@@ -109,9 +109,11 @@ double rarrDot(int n, Rarray v1, Rarray v2);
 
 // Vector modulus
 double carrMod(int n, Carray v);
+double rarrMod(int n, Rarray v);
 
 // Vector Modulus squared
 double carrMod2(int n, Carray v);
+double rarrMod2(int n, Rarray v);
 
 // Sum all elements of a vector
 double complex carrReduction(int n, Carray v);

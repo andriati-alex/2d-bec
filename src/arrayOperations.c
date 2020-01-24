@@ -371,6 +371,22 @@ double carrMod(int n, Carray v)
 
 
 
+double rarrMod(int n, Rarray v)
+{
+    int i;
+
+    double mod = 0;
+
+    for (i = 0; i < n; i++)
+    {
+        mod = mod + v[i] * v[i];
+    }
+
+    return sqrt(mod);
+}
+
+
+
 double carrMod2(int n, Carray v)
 {
     int i;
@@ -381,6 +397,19 @@ double carrMod2(int n, Carray v)
     {
         mod = mod + creal(v[i]) * creal(v[i]) + cimag(v[i]) * cimag(v[i]);
     }
+
+    return mod;
+}
+
+
+
+double rarrMod2(int n, Rarray v)
+{
+    int i;
+
+    double mod = 0;
+
+    for (i = 0; i < n; i++) mod = mod + v[i] * v[i];
 
     return mod;
 }
