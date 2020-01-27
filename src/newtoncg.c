@@ -2,8 +2,73 @@
 
 
 
+void compressComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
+{
+
+/** AUXILIAR ROUTINE
+    ****************
+    Transfer data from two arrays of real number corresponding to real
+    and imaginary part of complex numbers of a function of 2 variables
+    to a complex matrix, where the rows represent y-direction and  the
+    columns the x-direction
+
+    Output parameters : 'f' with f[j,i] = f(xi,yj)
+    Input parameters  : 're' and 'im' matrices in row-major format
+                        re[i + j*nx] = Re(f(xi,yj))
+                        im[i + j*nx] = Im(f(xi,yj))
+*********************************************************************/
+
+    int
+        i,
+        j;
+
+    for (j = 0; j < ny; j++)
+    {
+        for (i = 0; i < nx; i++) f[j][i] = re[i+j*nx] + I * im[i+j*nx];
+    }
+}
+
+
+
+
+
+void extractComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
+{
+
+/** AUXILIAR ROUTINE
+    ****************
+    Invert the input and output parameters from compressComplexMat routine
+    For more information see the description there
+*************************************************************************/
+
+    int
+        i,
+        j;
+
+    for (j = 0; j < ny; j++)
+    {
+        for (i = 0; i < nx; i++)
+        {
+            re[i+j*nx] = creal(f[j][i]);
+            im[i+j*nx] = cimag(f[j][i]);
+        }
+    }
+}
+
+
+
+
+
 double maxNorm(int N, Rarray fr, Rarray fi)
 {
+
+/** AUXILIAR ROUTINE
+    ****************
+    Given a function split in two arrays with its real and imaginary  parts
+    compute the Maximum of complex absolute value of its elements. Works as
+    norm to stop iterative methods
+*************************************************************************/
+
     int
         i;
 
@@ -25,9 +90,99 @@ double maxNorm(int N, Rarray fr, Rarray fi)
 
 
 
+
+
+void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
+               Cmatrix f)
+{
+/** OPTIONAL ROUTINE
+    ****************
+    Routine to apply pre-conditioning using second order derivatives which
+    appears in the equation as b*(d^2/dx^2 + d^2/dy^2).  Not much  helpful
+    if the equation contain others terms like  trap potential and rotation
+
+    Input Parameters  : nx & ny are grid dimension in each direction
+                        Lx & Ly the domain extension
+                        mu & b equation coefficients
+                        f function values in the grid f[j][i] = f(xi,yj)
+
+    Output Parameters : f (overwritten)
+**************************************************************************/
+
+    int
+        i,
+        j;
+
+    double
+        freqx,
+        freqy,
+        bfy2,
+        bfx2;
+
+    int
+        dim_sizes[2];
+
+    MKL_LONG
+        st;
+
+    DFTI_DESCRIPTOR_HANDLE
+        desc;
+
+
+
+    dim_sizes[0] = ny;
+    dim_sizes[1] = nx;
+
+    st = DftiCreateDescriptor(&desc,DFTI_DOUBLE,DFTI_COMPLEX,2,dim_sizes);
+    st = DftiSetValue(desc, DFTI_FORWARD_SCALE, 1.0 / sqrt(nx*ny));
+    st = DftiSetValue(desc, DFTI_BACKWARD_SCALE, 1.0 / sqrt(nx*ny));
+    st = DftiCommitDescriptor(desc);
+
+    st = DftiComputeForward(desc, f);
+
+    for (j = 0; j < ny; j++)
+    {
+        if (j <= (ny - 1) / 2) { freqy = j / Ly;        }
+        else                   { freqy = (j - ny) / Ly; }
+
+        bfy2 = b * freqy * freqy;
+
+        for (i = 0; i < nx; i++)
+        {
+            if (i <= (nx - 1) / 2) { freqx = i / Lx;        }
+            else                   { freqx = (i - nx) / Lx; }
+
+            bfx2 = b * freqx * freqx;
+
+            f[j][i] = f[j][i] / (- mu + bfx2 + bfy2);
+        }
+    }
+
+    st = DftiComputeBackward(desc, f);
+
+    st = DftiFreeDescriptor(&desc);
+}
+
+
+
+
+
 void stationaryOp(EqDataPkg EQ, double mu, Rarray fr, Rarray fi, Rarray Fr,
                   Rarray Fi)
 {
+
+/** MAIN ROUTINE - Nonlinead operators that define the differential equation
+    ************************************************************************
+    Act with the nonlinear operator on a function given through its real and
+    imaginary parts separately. If the given function is a  solution for the
+    equation then it must give zero (in all grid points)
+
+    Input Parameters  : Equation structure and 'lagrange multiplier' mu
+                        fr and fi real and imag part of the input function
+
+    Output Parameters : Fr and Fi real and imag part of the function after
+                        the action of the operator
+****************************************************************************/
 
     int
         i,
@@ -85,11 +240,11 @@ void stationaryOp(EqDataPkg EQ, double mu, Rarray fr, Rarray fi, Rarray Fr,
     DfDy_real(nx,ny,fr,hy,fr_dy);
     DfDy_real(nx,ny,fi,hy,fi_dy);
 
-    DfDx_real(nx,ny,fr_dx,hx,fr_dxdx);
-    DfDx_real(nx,ny,fi_dx,hx,fi_dxdx);
+    D2fDx2_real(nx,ny,fr,hx,fr_dxdx);
+    D2fDx2_real(nx,ny,fi,hx,fi_dxdx);
 
-    DfDy_real(nx,ny,fr_dy,hy,fr_dydy);
-    DfDy_real(nx,ny,fi_dy,hy,fi_dydy);
+    D2fDy2_real(nx,ny,fr,hy,fr_dydy);
+    D2fDy2_real(nx,ny,fi,hy,fi_dydy);
 
     for (i = 0; i < nx; i++)
     {
@@ -122,8 +277,10 @@ void stationaryOp(EqDataPkg EQ, double mu, Rarray fr, Rarray fi, Rarray Fr,
 
 
 
+
+
 void linearizedOp(EqDataPkg EQ, Rarray phir, Rarray phii, double mu,
-                Rarray infr, Rarray infi, Rarray outfr, Rarray outfi)
+                  Rarray infr, Rarray infi, Rarray outfr, Rarray outfi)
 {
 
 /** LINEARIZED OPERATOR FROM NEWTON METHOD
@@ -134,14 +291,10 @@ void linearizedOp(EqDataPkg EQ, Rarray phir, Rarray phii, double mu,
     \phi change according to the Newton iteration,  and is passsed in
     real and imaginary parts separately.
 
-
-
-    INPUT AND OUTPUT PARAMETERS
-    ***************************
-
-    inf(r/i) are the input real and imag part of the function
-    outf(r/i) are the result of the action of the operator in inf(r/i) **/
-
+    Input Parameters  : 'inf' the input function in real and imag. parts
+                        'phi' the function around the operator was linearized
+                        Equation structure and 'lagrange mult.' mu
+****************************************************************************/
 
     int
         i,
@@ -202,11 +355,11 @@ void linearizedOp(EqDataPkg EQ, Rarray phir, Rarray phii, double mu,
     DfDy_real(nx,ny,infr,hy,fr_dy);
     DfDy_real(nx,ny,infi,hy,fi_dy);
 
-    DfDx_real(nx,ny,fr_dx,hx,fr_dxdx);
-    DfDx_real(nx,ny,fi_dx,hx,fi_dxdx);
+    D2fDx2_real(nx,ny,infr,hx,fr_dxdx);
+    D2fDx2_real(nx,ny,infi,hx,fi_dxdx);
 
-    DfDy_real(nx,ny,fr_dy,hy,fr_dydy);
-    DfDy_real(nx,ny,fi_dy,hy,fi_dydy);
+    D2fDy2_real(nx,ny,infr,hy,fr_dydy);
+    D2fDy2_real(nx,ny,infi,hy,fi_dydy);
 
     for (i = 0; i < nx; i++)
     {
@@ -249,6 +402,8 @@ void linearizedOp(EqDataPkg EQ, Rarray phir, Rarray phii, double mu,
 
 
 
+
+
 int conjgrad(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
              Rarray phir, Rarray phii, Rarray fr, Rarray fi)
 {
@@ -262,21 +417,12 @@ int conjgrad(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
   * The differential operator that is discretized in the given gird assume
   * a 2x2 block form if organized in a matrix. The final vector space size
   * is 2 * nx * ny, where nx and ny are the number of points in each direc
-  * tion in the discretized domain. Although here we work separetely on the
-  * real and imaginary parts to track the derivation steps.
+  * tion in the discretized domain.
   *
-  * Therefore any time the vector is update, we call twice the underlying
-  * routine for the first nx*ny elements corresponding to real part and
-  * and the later nx*ny related to imaginary part
-  *
-  * INPUT/OUTPUT PARAMETERS
-  * ***********************
-  *
-  * Fr and Fi are the real and imaginary part of the righ-hand-side of the
-  * linear system to be solved
-  *
-  * fr and fi are the initial guess (good choice is zero), but finish with
-  * the corresponding solution if the method success **/
+  * Therefore any time the vector is updated, we call twice  the underlying
+  * routine for the first nx*ny elements corresponding to real part and and
+  * the later nx*ny related to imaginary part
+***************************************************************************/
 
     int
         N,
@@ -389,8 +535,174 @@ int conjgrad(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
 
 
 
+
+
+int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
+             Rarray phir, Rarray phii, Rarray fr, Rarray fi)
+{
+
+/** PRE-CONDITION VERSION OF CONJUGATE GRADIENT METHOD **/
+
+    int
+        N,
+        l,
+        nx,
+        ny,
+        maxiter;
+
+    double
+        a,
+        Lx,
+        Ly,
+        beta,
+        condScalar;
+
+    Rarray
+        lfr,
+        lfi,
+        realRes,
+        imagRes,
+        realDir,
+        imagDir,
+        prev_fr,
+        prev_fi,
+        prev_realRes,
+        prev_imagRes;
+
+    Rarray
+        realCond,
+        imagCond;
+
+    Cmatrix
+        fmat;
+
+    nx = EQ->nx;
+    ny = EQ->ny;
+    Lx = EQ->x[nx-1] - EQ->x[0];
+    Ly = EQ->y[ny-1] - EQ->y[0];
+
+    l = 0;
+    N = nx * ny; // Length of the vector is 2 * N
+    maxiter = 3 * N;
+
+    lfr = rarrDef(N); // real part after aplly linearized operator
+    lfi = rarrDef(N); // imag part after apply linearized operator
+    realRes = rarrDef(N);
+    imagRes = rarrDef(N);
+    realDir = rarrDef(N);
+    imagDir = rarrDef(N);
+    prev_fr = rarrDef(N);
+    prev_fi = rarrDef(N);
+    prev_realRes = rarrDef(N);
+    prev_imagRes = rarrDef(N);
+
+    // New variables needed for pre-conditioning
+    realCond = rarrDef(N);
+    imagCond = rarrDef(N);
+    fmat = cmatDef(ny,nx);
+
+    linearizedOp(EQ,phir,phii,mu,fr,fi,lfr,lfi);
+
+    // compute residue
+    rarrSub(N,Fr,lfr,realRes);
+    rarrSub(N,Fi,lfi,imagRes);
+
+    compressComplexMat(nx,ny,realRes,imagRes,fmat);
+    applyCond(nx,ny,Lx,Ly,mu,EQ->b,fmat);
+    extractComplexMat(nx,ny,realCond,imagCond,fmat);
+
+    // Initialize direction
+    extractComplexMat(nx,ny,realDir,imagDir,fmat);
+
+    // Scalar product with pre-conditioned residue
+    condScalar = rarrDot(N,realRes,realCond) + rarrDot(N,imagRes,imagCond);
+
+    while (rarrMod(nx*ny,realRes) + rarrMod(nx*ny,imagRes) > tol)
+    {
+
+        // lf hold the result of operator acting on direction
+        linearizedOp(EQ,phir,phii,mu,realDir,imagDir,lfr,lfi);
+
+        // scalar to update solution and residue
+        a = condScalar / (rarrDot(N,realDir,lfr) + rarrDot(N,imagDir,lfi));
+
+        // record residue from this iteration to safely update
+        rarrCopy(N, realRes, prev_realRes);
+        rarrCopy(N, imagRes, prev_imagRes);
+
+        // update residue
+        rarrUpdate(N, prev_realRes, (-1) * a, lfr, realRes);
+        rarrUpdate(N, prev_imagRes, (-1) * a, lfi, imagRes);
+
+        // record solution at this iteration to safely update
+        rarrCopy(N, fr, prev_fr);
+        rarrCopy(N, fi, prev_fi);
+
+        // update solution
+        rarrUpdate(N, prev_fr, a, realDir, fr);
+        rarrUpdate(N, prev_fi, a, imagDir, fi);
+
+        // EXTRA STEP FROM PRECONDITIONING acting on new residue
+        compressComplexMat(nx,ny,realRes,imagRes,fmat);
+        applyCond(nx,ny,Lx,Ly,mu,EQ->b,fmat);
+        extractComplexMat(nx,ny,realCond,imagCond,fmat);
+
+        // scalar to update direction
+        beta = (rarrDot(N,realRes,realCond) + rarrDot(N,imagRes,imagCond)) \
+               / condScalar;
+
+        rarrUpdate(N,realCond,beta,realDir,realDir);
+        rarrUpdate(N,imagCond,beta,imagDir,imagDir);
+
+        condScalar = beta * condScalar;
+
+        l = l + 1; // Update iteration counter
+
+        if (l == maxiter)
+        {
+            printf("\n\nWARNING : exit before achieve desired residual ");
+            printf("value in Conjugate Gradient method due to max number ");
+            printf("of iterations given =  %d\n\n", maxiter);
+            break;
+        }
+    }
+
+    // Free function local memory
+    free(lfr);
+    free(lfi);
+    free(realRes);
+    free(imagRes);
+    free(realDir);
+    free(imagDir);
+    free(prev_realRes);
+    free(prev_imagRes);
+    free(prev_fr);
+    free(prev_fi);
+    free(realCond);
+    free(imagCond);
+
+    cmatFree(ny,fmat);
+
+    return l;
+}
+
+
+
+
+
 void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
 {
+
+/** MAIN ROUTINE - NEWTON METHOD FOR NONLINEAR OPERATOR
+    ***************************************************
+    The Newton method is applied in the equation splited in real and imag
+    parts, where the resulting linear operator is discretized  what yield
+    a linear system which is solved by the iterative method  of conjugate
+    gradients.
+
+    Input parameter : 'tol' the maximum allowed error
+    Input/Output parameter : function 'f'
+    ********************************************************************/
 
     int
         i,
@@ -407,8 +719,10 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
         hy,
         mu,
         Ome,
+        dev,
         error,
-        CGtol;
+        CGtol,
+        error_check;
 
     Rarray
         x,
@@ -448,6 +762,7 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
     stationaryOp(EQ,mu,fr,fi,Fcg_real,Fcg_imag);
 
     error = maxNorm(nx*ny,Fcg_real,Fcg_imag);
+    error_check = error;
 
     // right hand side of linear operator passed to iteratice CG method
     for (i = 0; i < nx*ny; i++)
@@ -501,6 +816,18 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
         }
 
         Niter = Niter + 1;
+
+        // check if some progress is being done
+        if (Niter % 10 == 0)
+        {
+            dev = fabs(error - error_check);
+            if (dev < tol)
+            {
+                printf("WARNING : Progress Stopped before desired error\n");
+                break;
+            }
+            else error_check = error;
+        }
     }
 
     printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);

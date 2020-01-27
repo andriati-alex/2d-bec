@@ -27,11 +27,11 @@ obj = memoryHandling.o 	   \
 
 
 time_evolution : libgp.a exe/time_evolution.c
-	icc -o time_evolution exe/time_evolution.c -lm -qopenmp \
+	icc -o time_evolution exe/time_evolution.c -lm -mkl -qopenmp \
 		-L./lib -I./include -lgp -O3
 
 stationary : libgp.a exe/stationary.c
-	icc -o stationary exe/stationary.c -lm -qopenmp \
+	icc -o stationary exe/stationary.c -lm -mkl -qopenmp \
 		-L./lib -I./include -lgp -O3
 
 
@@ -88,7 +88,7 @@ observables.o : src/observables.c
 
 
 newtoncg.o : src/newtoncg.c
-	icc -c -O3 -qopenmp -I./include src/newtoncg.c
+	icc -c -O3 -qopenmp -mkl -I./include src/newtoncg.c
 
 
 

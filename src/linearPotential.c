@@ -70,6 +70,13 @@ void GaussianRing(int nx, int ny, Rarray x, Rarray y, Rarray V,
 void GetPotential(char name [], int nx, int ny, Rarray x, Rarray y, Rarray V,
                   double p [])
 {
+
+    if (strcmp(name, "zero") == 0)
+    {
+        rarrFill(nx*ny,0,V);
+        return;
+    }
+
     if (strcmp(name, "harmonic") == 0)
     {
         if (p[0] <= 0 || p[1] <= 0)
