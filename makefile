@@ -88,7 +88,7 @@ observables.o : src/observables.c
 
 
 newtoncg.o : src/newtoncg.c
-	icc -c -O3 -qopenmp -mkl -I./include src/newtoncg.c
+	icc -c -O3 -qopenmp -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -I./include src/newtoncg.c
 
 
 

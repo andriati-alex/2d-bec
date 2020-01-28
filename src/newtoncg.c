@@ -2,7 +2,7 @@
 
 
 
-void compressComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
+void compressComplex(int nx, int ny, Rarray re, Rarray im, Carray f)
 {
 
 /** AUXILIAR ROUTINE
@@ -24,7 +24,7 @@ void compressComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
 
     for (j = 0; j < ny; j++)
     {
-        for (i = 0; i < nx; i++) f[j][i] = re[i+j*nx] + I * im[i+j*nx];
+        for (i = 0; i < nx; i++) f[j*nx + i] = re[i+j*nx] + I * im[i+j*nx];
     }
 }
 
@@ -32,7 +32,7 @@ void compressComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
 
 
 
-void extractComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
+void extractComplex(int nx, int ny, Rarray re, Rarray im, Carray f)
 {
 
 /** AUXILIAR ROUTINE
@@ -49,8 +49,8 @@ void extractComplexMat(int nx, int ny, Rarray re, Rarray im, Cmatrix f)
     {
         for (i = 0; i < nx; i++)
         {
-            re[i+j*nx] = creal(f[j][i]);
-            im[i+j*nx] = cimag(f[j][i]);
+            re[i+j*nx] = creal(f[j*nx + i]);
+            im[i+j*nx] = cimag(f[j*nx + i]);
         }
     }
 }
@@ -93,7 +93,7 @@ double maxNorm(int N, Rarray fr, Rarray fi)
 
 
 void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
-               Cmatrix f)
+               Carray f)
 {
 /** OPTIONAL ROUTINE
     ****************
@@ -119,7 +119,7 @@ void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
         bfy2,
         bfx2;
 
-    int
+    MKL_LONG
         dim_sizes[2];
 
     MKL_LONG
@@ -134,8 +134,8 @@ void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
     dim_sizes[1] = nx;
 
     st = DftiCreateDescriptor(&desc,DFTI_DOUBLE,DFTI_COMPLEX,2,dim_sizes);
-    st = DftiSetValue(desc, DFTI_FORWARD_SCALE, 1.0 / sqrt(nx*ny));
-    st = DftiSetValue(desc, DFTI_BACKWARD_SCALE, 1.0 / sqrt(nx*ny));
+    st = DftiSetValue(desc,DFTI_FORWARD_SCALE,1.0 / sqrt(nx*ny));
+    st = DftiSetValue(desc,DFTI_BACKWARD_SCALE,1.0 / sqrt(nx*ny));
     st = DftiCommitDescriptor(desc);
 
     st = DftiComputeForward(desc, f);
@@ -145,16 +145,16 @@ void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
         if (j <= (ny - 1) / 2) { freqy = j / Ly;        }
         else                   { freqy = (j - ny) / Ly; }
 
-        bfy2 = b * freqy * freqy;
+        bfy2 = b * ( - 4 * PI * PI * freqy * freqy);
 
         for (i = 0; i < nx; i++)
         {
             if (i <= (nx - 1) / 2) { freqx = i / Lx;        }
             else                   { freqx = (i - nx) / Lx; }
 
-            bfx2 = b * freqx * freqx;
+            bfx2 = b * ( - 4 * PI * PI * freqx * freqx);
 
-            f[j][i] = f[j][i] / (- mu + bfx2 + bfy2);
+            f[j*nx + i] = f[j*nx + i] / (- mu + bfx2 + bfy2);
         }
     }
 
@@ -573,7 +573,7 @@ int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
         realCond,
         imagCond;
 
-    Cmatrix
+    Carray
         fmat;
 
     nx = EQ->nx;
@@ -599,7 +599,7 @@ int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
     // New variables needed for pre-conditioning
     realCond = rarrDef(N);
     imagCond = rarrDef(N);
-    fmat = cmatDef(ny,nx);
+    fmat = carrDef(ny*nx);
 
     linearizedOp(EQ,phir,phii,mu,fr,fi,lfr,lfi);
 
@@ -607,12 +607,12 @@ int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
     rarrSub(N,Fr,lfr,realRes);
     rarrSub(N,Fi,lfi,imagRes);
 
-    compressComplexMat(nx,ny,realRes,imagRes,fmat);
+    compressComplex(nx,ny,realRes,imagRes,fmat);
     applyCond(nx,ny,Lx,Ly,mu,EQ->b,fmat);
-    extractComplexMat(nx,ny,realCond,imagCond,fmat);
+    extractComplex(nx,ny,realCond,imagCond,fmat);
 
     // Initialize direction
-    extractComplexMat(nx,ny,realDir,imagDir,fmat);
+    extractComplex(nx,ny,realDir,imagDir,fmat);
 
     // Scalar product with pre-conditioned residue
     condScalar = rarrDot(N,realRes,realCond) + rarrDot(N,imagRes,imagCond);
@@ -643,9 +643,9 @@ int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
         rarrUpdate(N, prev_fi, a, imagDir, fi);
 
         // EXTRA STEP FROM PRECONDITIONING acting on new residue
-        compressComplexMat(nx,ny,realRes,imagRes,fmat);
+        compressComplex(nx,ny,realRes,imagRes,fmat);
         applyCond(nx,ny,Lx,Ly,mu,EQ->b,fmat);
-        extractComplexMat(nx,ny,realCond,imagCond,fmat);
+        extractComplex(nx,ny,realCond,imagCond,fmat);
 
         // scalar to update direction
         beta = (rarrDot(N,realRes,realCond) + rarrDot(N,imagRes,imagCond)) \
@@ -681,7 +681,7 @@ int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
     free(realCond);
     free(imagCond);
 
-    cmatFree(ny,fmat);
+    free(fmat);
 
     return l;
 }
@@ -790,9 +790,9 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
         rarrFill(nx*ny,0.0,cgi);
 
         // Solve with conj. grad. according to current newton error
-        if (1E-5 * error > 1E-2) { CGtol = 1E-2; }
-        else                     { CGtol = 1E-5 * error; }
-        CGiter = conjgrad(EQ,mu,CGtol,Fcg_real,Fcg_imag,fr,fi,cgr,cgi);
+        if (1E-2 * error > 1E-2) { CGtol = 1E-2; }
+        else                     { CGtol = 1E-2 * error; }
+        CGiter = conjgradCond(EQ,mu,CGtol,Fcg_real,Fcg_imag,fr,fi,cgr,cgi);
 
         // update solution from newton iteration
         rarrAdd(nx*ny,fr,cgr,fr);
