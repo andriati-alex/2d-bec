@@ -2,6 +2,20 @@
 
 
 
+void checkFFTstatus(MKL_LONG status)
+{
+    if (status != 0)
+    {
+        printf("\n\nERROR IN FFT ROUTINE : status returned %d\n",status);
+        printf("Error message given : %s\n\n",DftiErrorMessage(status));
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+
+
+
 void compressComplex(int nx, int ny, Rarray re, Rarray im, Carray f)
 {
 
@@ -9,10 +23,9 @@ void compressComplex(int nx, int ny, Rarray re, Rarray im, Carray f)
     ****************
     Transfer data from two arrays of real number corresponding to real
     and imaginary part of complex numbers of a function of 2 variables
-    to a complex matrix, where the rows represent y-direction and  the
-    columns the x-direction
+    to a complex array
 
-    Output parameters : 'f' with f[j,i] = f(xi,yj)
+    Output parameters : 'f' with f[j*nx + i] = f(xi,yj)
     Input parameters  : 're' and 'im' matrices in row-major format
                         re[i + j*nx] = Re(f(xi,yj))
                         im[i + j*nx] = Im(f(xi,yj))
@@ -104,7 +117,7 @@ void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
     Input Parameters  : nx & ny are grid dimension in each direction
                         Lx & Ly the domain extension
                         mu & b equation coefficients
-                        f function values in the grid f[j][i] = f(xi,yj)
+                        f function values in the grid f[j*nx + i] = f(xi,yj)
 
     Output Parameters : f (overwritten)
 **************************************************************************/
@@ -134,11 +147,16 @@ void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
     dim_sizes[1] = nx;
 
     st = DftiCreateDescriptor(&desc,DFTI_DOUBLE,DFTI_COMPLEX,2,dim_sizes);
-    st = DftiSetValue(desc,DFTI_FORWARD_SCALE,1.0 / sqrt(nx*ny));
-    st = DftiSetValue(desc,DFTI_BACKWARD_SCALE,1.0 / sqrt(nx*ny));
+    checkFFTstatus(st);
+    st = DftiSetValue(desc,DFTI_FORWARD_SCALE,1.0/sqrt(nx*ny));
+    checkFFTstatus(st);
+    st = DftiSetValue(desc,DFTI_BACKWARD_SCALE,1.0/sqrt(nx*ny));
+    checkFFTstatus(st);
     st = DftiCommitDescriptor(desc);
+    checkFFTstatus(st);
 
     st = DftiComputeForward(desc, f);
+    checkFFTstatus(st);
 
     for (j = 0; j < ny; j++)
     {
@@ -159,8 +177,9 @@ void applyCond(int nx, int ny, double Lx, double Ly, double mu, double b,
     }
 
     st = DftiComputeBackward(desc, f);
-
+    checkFFTstatus(st);
     st = DftiFreeDescriptor(&desc);
+    checkFFTstatus(st);
 }
 
 
@@ -790,9 +809,9 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
         rarrFill(nx*ny,0.0,cgi);
 
         // Solve with conj. grad. according to current newton error
-        if (1E-2 * error > 1E-2) { CGtol = 1E-2; }
-        else                     { CGtol = 1E-2 * error; }
-        CGiter = conjgradCond(EQ,mu,CGtol,Fcg_real,Fcg_imag,fr,fi,cgr,cgi);
+        if (1E-3 * error > 1E-2) { CGtol = 1E-2; }
+        else                     { CGtol = 1E-3 * error; }
+        CGiter = conjgrad(EQ,mu,CGtol,Fcg_real,Fcg_imag,fr,fi,cgr,cgi);
 
         // update solution from newton iteration
         rarrAdd(nx*ny,fr,cgr,fr);
