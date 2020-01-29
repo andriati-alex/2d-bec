@@ -347,8 +347,8 @@ double MaxResidue(int nx, int ny, double hx, double hy, double b, double Ome,
     DfDx(nx,ny,f,hx,dfdx);
     DfDy(nx,ny,f,hy,dfdy);
 
-    DfDx(nx,ny,dfdx,hx,d2fdx2);
-    DfDy(nx,ny,dfdy,hy,d2fdy2);
+    D2fDx2(nx,ny,f,hx,d2fdx2);
+    D2fDy2(nx,ny,f,hy,d2fdy2);
 
     maxres = 0;
 
@@ -420,8 +420,8 @@ double AvgResidue(int nx, int ny, double hx, double hy, double b, double Ome,
     DfDx(nx,ny,f,hx,dfdx);
     DfDy(nx,ny,f,hy,dfdy);
 
-    DfDx(nx,ny,dfdx,hx,d2fdx2);
-    DfDy(nx,ny,dfdy,hy,d2fdy2);
+    D2fDx2(nx,ny,f,hx,d2fdx2);
+    D2fDy2(nx,ny,f,hy,d2fdy2);
 
     for (i = 0; i < nx; i++)
     {

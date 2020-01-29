@@ -129,7 +129,7 @@ struct _EquationDataPkg
         Ome;    // rotation frequency
 
     double
-        p[4];   // Parameters to generate external potential
+        p[5];  // Parameters to generate external potential
 
     Rarray
         x,

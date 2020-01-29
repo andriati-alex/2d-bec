@@ -31,8 +31,8 @@ void TimePrint(double t)
 void ReachNewLine(FILE * f)
 {
 
-    // Read until get new line or 'end of file' in a opened file.
-    // Function to skip comment lines in job configuration file
+/** Read until get new line or 'end of file' in a opened file.
+    Function to skip comment lines in job configuration file **/
 
     char
         sentinel;
@@ -66,9 +66,6 @@ void SaveConf(FILE * f, EqDataPkg EQ, double dt, int N)
     fprintf(f, "%.10lf %.10lf %d ", xi, xf, EQ->nx);
     fprintf(f, "%.10lf %.10lf %d ", yi, yf, EQ->ny);
 
-    // Time domain
-    fprintf(f, "%.15lf %d ", dt, N);
-
     // Equation parameters
     fprintf(f, "%.15lf %.15lf %.15lf ", EQ->b, EQ->Ome, EQ->g);
     fprintf(f, "%.15lf %.15lf %.15lf %.15lf\n",
@@ -84,7 +81,8 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
           char Vname[], double * dt, int * N)
 {
 
-/** Read line by line of _domain file and _eq to setup a new integration **/
+/** Read a line of _domain file and _eq to setup initial function
+    in the grid, the trap potential and the equation parameters **/
 
     int
         k,
@@ -103,16 +101,14 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
 
 
 
-    // Read spatial and time domain settings
-    // -------------------------------------
-
+    // Domain grid information
     k = fscanf(confFile, "%lf %lf %d ", &xi, &xf, &nx);
     k = fscanf(confFile, "%lf %lf %d ", &yi, &yf, &ny);
+    // ISSUE - time step and Number of steps are useless  for
+    // newton method but they are kept as notation convention
     k = fscanf(confFile, "%lf %d", dt, N);
 
     // Read a line of numbers corresponding to equation parameters
-    // -----------------------------------------------------------
-
     k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
         &p[0], &p[1], &p[2], &p[3]);
 
@@ -127,18 +123,8 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
 int main(int argc, char * argv[])
 {
 
-    /*  DEFINE THE NUMBER OF THREADS BASED ON THE COMPUTER ARCHITECTURE
-     *  --------------------------------------------------------------- */
-
+    // DEFINE THE NUMBER OF THREADS BASED ON THE COMPUTER ARCHITECTURE
     omp_set_num_threads(omp_get_max_threads() / 2);
-
-
-
-    /* ==================================================================== *
-     *
-     *                         VARIABLES DEFINITION
-     *
-     * ==================================================================== */
 
 
 
@@ -147,19 +133,17 @@ int main(int argc, char * argv[])
         i,
         j,
         k,
-        nx,
-        ny,
-        method,
-        Nlines,
-        skipframes,
-        resetinit;
+        nx, // number of grid points along x
+        ny, // number of grid points along y
+        iter_tol; // Maximum allowed iterations in newton method
 
 
 
     double
+        err_tol,    // Maximum error allowed to stop newton iterations
         start,      // start trigger to measure time
         time_used,  // Time used in calling evolution routine
-        dt,         // time step
+        dt,
         real,   // real part of initial guess read from file
         imag;   // imag part of initial guess read from file
 
@@ -167,7 +151,6 @@ int main(int argc, char * argv[])
 
     char
         c,
-        timeinfo,       // 'r' for real and 'i' for imaginary
         fname[100],     // name of files to open
         potname[50],    // name of trap function in linearPotential.c
         infname[100],   // input file name prefix
@@ -178,7 +161,7 @@ int main(int argc, char * argv[])
     FILE
         * domain_file,
         * job_file,
-        * orb_file,
+        * f0_file,
         * eq_file;
 
 
@@ -200,53 +183,44 @@ int main(int argc, char * argv[])
 
 
 
-    job_file = fopen("job.conf", "r");
-
-    if (job_file == NULL) // impossible to open file
+    job_file = fopen("job-ncg.conf","r");
+    if (job_file == NULL)
     {
-        printf("\n\n\tERROR: impossible to open file %s\n", "job.conf");
+        printf("\n\nERROR: impossible to open file %s\n\n","job-ncg.conf");
         exit(EXIT_FAILURE);
     }
 
-    i = 1;
 
+
+    // Read fields of configuration file to setup the job to do
+    i = 1;
     while ( (c  = getc(job_file)) != EOF)
     {
 
-        // jump comment line marked as #
+        // jump comment line initiated with #
         if (c == '#') { ReachNewLine(job_file); continue; }
         else          { fseek(job_file, -1, SEEK_CUR);    }
 
         switch (i)
         {
             case 1:
-                fscanf(job_file, "%s", fname);
-                timeinfo = fname[0];
-                i = i + 1;
-                break;
-            case 2:
                 fscanf(job_file, "%s", potname);
                 i = i + 1;
                 break;
-            case 3:
+            case 2:
                 fscanf(job_file, "%s", infname);
                 i = i + 1;
                 break;
-            case 4:
+            case 3:
                 fscanf(job_file, "%s", outfname);
                 i = i + 1;
                 break;
+            case 4:
+                fscanf(job_file, "%lf", &err_tol);
+                i = i + 1;
+                break;
             case 5:
-                fscanf(job_file, "%d", &method);
-                i = i + 1;
-                break;
-            case 6:
-                fscanf(job_file, "%d", &Nlines);
-                skipframes = Nlines;
-                i = i + 1;
-                break;
-            case 7:
-                fscanf(job_file, "%d", &resetinit);
+                fscanf(job_file, "%d", &iter_tol);
                 i = i + 1;
                 break;
         }
@@ -261,35 +235,20 @@ int main(int argc, char * argv[])
 
 
 
-    if (timeinfo != 'r' && timeinfo != 'R')
-    {
-        if (timeinfo != 'i' && timeinfo != 'I')
-        {
-            printf("\n\nInvalid keyword for propagation type.\n");
-            printf("Valid ones are either 'imag' or 'real'.\n\n");
-            exit(EXIT_FAILURE);
-        }
-    }
 
 
 
 
 
-
-
-
-
-
-    /*  ===============================================================
-     
-                   LET FILES OPENNED TO EXECUTE LIST OF JOBS
-     
-        ===============================================================  */
+    /*********************************************************************
+     *********************************************************************
+     ***************     OPEN TO EXECUTE LIST OF JOBS      ***************
+     *********************************************************************
+     *********************************************************************/
 
 
 
     // open file with values of equation's parameters
-
     printf("\n\n");
     printf("\t\t*********************************************\n");
     printf("\t\t*                                           *\n");
@@ -300,11 +259,8 @@ int main(int argc, char * argv[])
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_eq.dat");
-
     printf("\nLooking for %s", fname);
-
     eq_file = fopen(fname, "r");
-
     if (eq_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
@@ -318,15 +274,11 @@ int main(int argc, char * argv[])
 
 
     // open file to configure grid domain
-
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_domain.dat");
-
     printf("\nLooking for %s", fname);
-
     domain_file = fopen(fname, "r");
-
     if (domain_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
@@ -339,17 +291,13 @@ int main(int argc, char * argv[])
 
 
 
-    // open file with values of initial condition
-
+    // open file with values of initial function in grid points
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_init.dat");
-
     printf("\nLooking for %s", fname);
-
-    orb_file = fopen(fname, "r");
-
-    if (orb_file == NULL)  // impossible to open file
+    f0_file = fopen(fname, "r");
+    if (f0_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
         exit(EXIT_FAILURE);
@@ -362,47 +310,37 @@ int main(int argc, char * argv[])
 
 
     // open file to write parameters of domain and equation
-
-    strcpy(fname, "output/");
+    strcpy(fname,"output/");
     strcat(fname, outfname);
-
-    if (timeinfo == 'i' || timeinfo == 'I')
-    {
-        strcat(fname, "_conf_imagtime.dat");
-    } else
-    {
-        strcat(fname, "_conf_realtime.dat");
-    }
-
+    strcat(fname,"_conf_ncg.dat");
     job_file = fopen(fname, "w");
-
     if (job_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
         exit(EXIT_FAILURE);
     }
-
     fprintf(job_file, "# Trap name : %s\n", potname);
 
 
 
+    // Setup structure to hold all necessary input data that
+    // define the equation to be solved
     EQ = SetupParams(eq_file, domain_file, potname, &dt, &N);
     nx = EQ->nx;
     ny = EQ->ny;
 
-    S = carrDef(nx*ny); // solution at grid points
+
+
+    // SETUP INITIAL FUNCTION IN DISCRETIZED POINTS
+    S = carrDef(nx*ny);
     abs2 = rarrDef(nx*ny);
-
-    // SETUP INITIAL DATA TO PROPAGATE
-
     for (i = 0; i < nx*ny; i++)
     {
-        k = fscanf(orb_file, " (%lf%lfj)", &real, &imag);
+        k = fscanf(f0_file, " (%lf%lfj)", &real, &imag);
         S[i] = real + I * imag;
         abs2[i] = real*real + imag*imag;
     }
-
-    fclose(orb_file);
+    fclose(f0_file);
 
     printf("\nGot Initial condition with || . || =");
     printf(" %.6lf\n", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
@@ -425,13 +363,12 @@ int main(int argc, char * argv[])
     printf("\n");
 
     printf("x = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
-	   EQ->x[0],EQ->x[1],EQ->x[nx-2],EQ->x[nx-1]);
+	        EQ->x[0],EQ->x[1],EQ->x[nx-2],EQ->x[nx-1]);
     printf("%d points for x-direction | x-grid-spacing = %.3lf\n",nx,EQ->hx);
 
     printf("y = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
-	   EQ->y[0],EQ->y[1],EQ->y[ny-2],EQ->y[ny-1]);
+	        EQ->y[0],EQ->y[1],EQ->y[ny-2],EQ->y[ny-1]);
     printf("%d points for y-direction | y-grid-spacing = %.3lf\n",ny,EQ->hy);
-    printf("Final time %.2lf in steps of %.6lf",N*dt,dt);
 
 
 
@@ -442,17 +379,18 @@ int main(int argc, char * argv[])
 
 
 
-    /*  ===============================================================
-     
-                             CALL INTEGRATION ROUTINE
-     
-        ===============================================================  */
+    /*********************************************************************
+     *********************************************************************
+     ********************    CALL INTEGRATION ROUTINE    *****************
+     *********************************************************************
+     *********************************************************************/
 
-    printf("\n\n\n");
+    printf("\n\nStarting the iterations");
+    printf(" : error_tol = %.1E | iter_tol = %d\n\n",err_tol,iter_tol);
 
     start = omp_get_wtime();
 
-    stationaryNewton(EQ,S,1E-4);
+    stationaryNewton(EQ,S,err_tol,iter_tol);
 
     time_used = (double) (omp_get_wtime() - start);
 
@@ -464,16 +402,12 @@ int main(int argc, char * argv[])
     strcat(fname, outfname);
     strcat(fname, "_ncg.dat");
 
-    carr_txt(fname, nx*ny, S);
-
-    SaveConf(job_file, EQ, dt, N);
-
+    carr_txt(fname,nx*ny,S);
+    SaveConf(job_file,EQ,dt,N);
 
 
 
 
-    /* release memory
-     * ------------------------------------------------------------------- */
 
     fclose(job_file);
     fclose(eq_file);
@@ -481,12 +415,11 @@ int main(int argc, char * argv[])
     free(S);
     free(abs2);
     ReleaseEqDataPkg(EQ);
-    /* ------------------------------------------------------------------- */
 
 
 
-    /*   ==========================    END    ==========================   */
 
-    printf("\n\n");
+
+    printf("\n\nDone\n\n");
     return 0;
 }

@@ -26,6 +26,10 @@ void renormalize(int, int, Carray, double, double, double);
 
 void renormalizeReal(int, int, Rarray, double, double, double);
 
+void D2fDx2(int nx, int ny, Carray f, double hx, Carray df);
+
+void D2fDy2(int nx, int ny, Carray f, double hy, Carray df);
+
 void D2fDx2_real(int nx, int ny, Rarray f, double hx, Rarray df);
 
 void D2fDy2_real(int nx, int ny, Rarray f, double hy, Rarray df);

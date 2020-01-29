@@ -483,6 +483,54 @@ void DfDy_real(int nx, int ny, Rarray f, double hy, Rarray dfdy)
 
 
 
+void D2fDx2(int nx, int ny, Carray f, double hx, Carray df)
+{
+
+/** Compute partial 2nd-derivative in x-direction
+  *
+  * Output parameter : df
+  * grid points d2f/dx2(xi,yi) = df[i + j*nx] **/
+
+    int
+        i,
+        j,
+        s;
+
+    double
+        r;
+
+    r= 1.0 / (12 * hx * hx);
+
+    for (j = 0; j < ny; j++)
+    {
+        s = j * nx; // stride to get the yj grid line
+
+        // Do separately the computation near  the boundary
+        // since involves evaluation where the  'f' is zero
+        // The zeros are kept to track the rule in the loop
+        // every time the loop yield an evaluation  out  of
+        // the domain the function is assumed to give  zero
+
+        df[s] = (-f[2+s] + 16*f[1+s] - 30*f[s] + 16*0 - 0)*r;
+
+        df[1+s] = (-f[3+s] + 16*f[2+s] - 30*f[1+s] + 16*f[s] - 0)*r;
+
+        df[nx-2+s] = (-0 + 16*f[nx-1+s] - 30*f[nx-2+s] + 16*f[nx-3+s] \
+                      -f[nx-4+s])*r;
+
+        df[nx-1+s] = (-0 + 16*0 - 30*f[nx-1+s] + 16*f[nx-2+s] -f[nx-3+s])*r;
+
+        for (i = 2; i < nx - 2; i++)
+        {
+            df[i+s] = (-f[i+2+s] + 16*f[i+1+s] - 30*f[i + s] + 16*f[i-1+s] \
+                       -f[i-2+s])*r;
+        }
+    }
+
+}
+
+
+
 void D2fDx2_real(int nx, int ny, Rarray f, double hx, Rarray df)
 {
 
@@ -524,6 +572,76 @@ void D2fDx2_real(int nx, int ny, Rarray f, double hx, Rarray df)
         {
             df[i+s] = (-f[i+2+s] + 16*f[i+1+s] - 30*f[i + s] + 16*f[i-1+s] \
                        -f[i-2+s])*r;
+        }
+    }
+
+}
+
+
+
+void D2fDy2(int nx, int ny, Carray f, double hy, Carray df)
+{
+
+/** Compute partial 2nd-derivative in y-direction
+  *
+  * Output parameter : df
+  * grid points d2f/dy2(xi,yi) = df[i + j*nx] **/
+
+    int
+        i,
+        j,
+        s,
+        s1,
+        s2,
+        sm1,
+        sm2;
+
+    double
+        r;
+
+    r = 1.0 / (12 * hy * hy); // ratio for a fourth-order scheme
+
+    for (i = 0; i < nx; i++)
+    {
+
+        // Do separately the computation near  the boundary
+        // since involves evaluation where the  'f' is zero
+        // The zeros are kept to track the rule in the loop
+        // every time the loop yield an evaluation  out  of
+        // the domain the function is assumed to give  zero
+
+        s = 0*nx;
+        s1 = 1*nx;
+        s2 = 2*nx;
+        df[i+s] = (- f[i+s2] + 16*f[i+s1] - 30 *f[i+s] + 16*0 - 0) * r;
+
+        s = 1*nx;
+        s1 = 2*nx;
+        s2 = 3*nx;
+        sm1 = 0*nx;
+        df[i+s] = (- f[i+s2] + 16*f[i+s1] - 30 *f[i+s] + 16*f[i+sm1] - 0) * r;
+
+        s = (ny-2)*nx;
+        s1  = (ny-1)*nx;
+        sm1 = (ny-3)*nx;
+        sm2 = (ny-4)*nx;
+        df[i+s] = (- 0 + 16*f[i+s1] - 30 *f[i+s] + 16*f[i+sm1] - f[i+sm2]) * r;
+
+        s = (ny-1)*nx;
+        sm1 = (ny-2)*nx;
+        sm2 = (ny-3)*nx;
+        df[i+s] = (- 0 + 16*0 - 30 *f[i+s] + 16*f[i+sm1] - f[i+sm2]) * r;
+
+        for (j = 2; j < ny - 2; j++)
+        {
+            s = j * nx; // stride to get the yj point
+            s1  = (j + 1) * nx;
+            s2  = (j + 2) * nx;
+            sm1 = (j - 1) * nx;
+            sm2 = (j - 2) * nx;
+
+            df[i+s] = (- f[i+s2] + 16*f[i+s1] - 30 *f[i+s] + 16*f[i+sm1] \
+                         - f[i+sm2])*r;
         }
     }
 

@@ -16,6 +16,6 @@ void linearizedOp(EqDataPkg,Rarray,Rarray,double,Rarray,Rarray,Rarray,Rarray);
 
 int conjgrad(EqDataPkg,double,double,Rarray,Rarray,Rarray,Rarray,Rarray,Rarray);
 
-void stationaryNewton(EqDataPkg,Carray,double);
+void stationaryNewton(EqDataPkg,Carray,double,int);
 
 #endif

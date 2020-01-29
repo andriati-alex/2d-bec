@@ -42,8 +42,8 @@ void quartic(int nx, int ny, Rarray x, Rarray y, Rarray V, double wx, double wy)
 
 
 
-void GaussianRing(int nx, int ny, Rarray x, Rarray y, Rarray V,
-     double wx, double wy, double height, double width)
+void HarmonicMexicanHat(int nx, int ny, Rarray x, Rarray y, Rarray V,
+     double wx, double wy, double height, double width, double asym)
 {
     int
         i,
@@ -58,8 +58,33 @@ void GaussianRing(int nx, int ny, Rarray x, Rarray y, Rarray V,
         for (j = 0; j < ny; j++)
         {
             x2 = x[i] * x[i];
-            y2 = y[j] * y[j];
+            y2 = asym * asym * y[j] * y[j];
             V[i + j*nx] = 0.5 * (wx*wx*x2 + wy*wy*y2) + \
+                          height * exp(-(x2 + y2) / width / width);
+        }
+    }
+}
+
+
+
+void QuarticMexicanHat(int nx, int ny, Rarray x, Rarray y, Rarray V,
+     double wx, double wy, double height, double width, double asym)
+{
+    int
+        i,
+        j;
+
+    double
+        x2,
+        y2;
+
+    for (i = 0; i < nx; i ++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            x2 = x[i] * x[i];
+            y2 = asym * asym * y[j] * y[j];
+            V[i + j*nx] = 0.5 * (wx*wx*x2*x2 + wy*wy*y2*y2) + \
                           height * exp(-(x2 + y2) / width / width);
         }
     }
@@ -101,7 +126,7 @@ void GetPotential(char name [], int nx, int ny, Rarray x, Rarray y, Rarray V,
         return;
     }
 
-    if (strcmp(name, "GaussianRing") == 0)
+    if (strcmp(name, "HarmonicMexicanHat") == 0)
     {
         if (p[0] <= 0 || p[1] <= 0 || p[2] <= 0)
         {
@@ -110,10 +135,25 @@ void GetPotential(char name [], int nx, int ny, Rarray x, Rarray y, Rarray V,
             exit(EXIT_FAILURE);
         }
 
-        GaussianRing(nx,ny,x,y,V,p[0],p[1],p[2],p[3]);
+        HarmonicMexicanHat(nx,ny,x,y,V,p[0],p[1],p[2],p[3],p[4]);
         return;
     }
 
-    printf("\n\n\nERROR: Potential '%s' not implemented\n\n", name);
+    if (strcmp(name, "QaurticMexicanHat") == 0)
+    {
+        if (p[0] <= 0 || p[1] <= 0 || p[2] <= 0)
+        {
+            printf("\n\nHarmonic parameters must be positive and");
+            printf(" gaussian height must be positive.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        QuarticMexicanHat(nx,ny,x,y,V,p[0],p[1],p[2],p[3],p[4]);
+        return;
+    }
+
+    printf("\n\n\nERROR: Potential '%s' not implemented.", name);
+    printf("\nHave a look in src/linearPotential.c to see");
+    printf(" the available ones or to define a new one.\n\n");
     exit(EXIT_FAILURE);
 }

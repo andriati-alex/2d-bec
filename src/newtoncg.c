@@ -709,7 +709,7 @@ int conjgradCond(EqDataPkg EQ, double mu, double tol, Rarray Fr, Rarray Fi,
 
 
 
-void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
+void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
 {
 
 /** MAIN ROUTINE - NEWTON METHOD FOR NONLINEAR OPERATOR
@@ -799,7 +799,7 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
     Niter = 0;
     CGiter = 0;
     sepline();
-    while (error > tol)
+    while (error > err_tol)
     {
         printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
         printf("%9.5lf    %9.5lf\n",E,mu);
@@ -837,15 +837,22 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double tol)
         Niter = Niter + 1;
 
         // check if some progress is being done
-        if (Niter % 10 == 0)
+        if (Niter % 15 == 0)
         {
             dev = fabs(error - error_check);
-            if (dev < tol)
+            if (dev < err_tol)
             {
-                printf("WARNING : Progress Stopped before desired error\n");
+                printf("WARNING : Progress Stopped\n");
                 break;
             }
             else error_check = error;
+        }
+
+        if (Niter > iter_tol)
+        {
+            printf("WARNING : Achieved maximum iterations allowed");
+            printf(" by the user in job-ncg.conf file. Exiting\n");
+            break;
         }
     }
 

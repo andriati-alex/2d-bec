@@ -197,6 +197,7 @@ EqDataPkg PackEqData(int nx,int ny,double xi,double xf,double yi, double yf,
     gp->p[1] = p[1];
     gp->p[2] = p[2];
     gp->p[3] = p[3];
+    gp->p[4] = p[4];
     strcpy(gp->Vname,Vname);
 
     GetPotential(Vname,nx,ny,gp->x,gp->y,gp->V,p);

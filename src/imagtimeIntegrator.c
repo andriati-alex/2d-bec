@@ -123,7 +123,7 @@ void ExplicitX_alongX(int nx, int ny, doublec dt, double hx, double b,
 
 
 
-int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
+int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S, char p[])
 {
 
     unsigned int
@@ -134,6 +134,9 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         ny,
         tid,
         nthreads;
+
+    char
+        fname[100];
 
     double
         b,
@@ -177,6 +180,22 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         V,
         pot,
         abs2;
+
+    FILE
+        * f_obs;
+
+
+
+    strcpy(fname,p);
+    strcat(fname,"_observables_imagtime.dat");
+
+    f_obs = fopen(fname, "w");
+    if (f_obs == NULL)
+    {
+        printf("\n\nERROR: impossible to open file '%s'", fname);
+        printf(" to write solution in time steps\n\n");
+        exit(EXIT_FAILURE);
+    }
 
 
 
@@ -332,6 +351,29 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
             printf("    %8.5lf",maxres);
             printf("    %9.5lf",vir);
             printf("\n");
+
+            fprintf(f_obs,"%9.4lf %11.7lf %11.7lf %10.7lf\n",(k+1)*realDT,
+                    creal(E),creal(mu),maxres);
+        }
+
+        // record solution at intermediate steps to analyse convergence
+        if ( (k + 1) == 5 * (N / 100) )
+        {
+            strcpy(fname,p);
+            strcat(fname,"_5percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 10 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_10percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 50 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_50percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
         }
 
     }
@@ -349,6 +391,8 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
     free(Uy);
     free(Ly);
 
+    fclose(f_obs);
+
     return N + 1;
 }
 
@@ -356,7 +400,7 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
 
 
 
-int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
+int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S, char p[])
 {
 
     unsigned int
@@ -380,6 +424,9 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         meanr,
         maxres,
         avgres;
+
+    char
+        fname[100];
 
     double complex
         E,
@@ -411,7 +458,21 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         pot,
         abs2;
 
+    FILE
+        * f_obs;
 
+
+
+    strcpy(fname,p);
+    strcat(fname,"_observables_imagtime.dat");
+
+    f_obs = fopen(fname, "w");
+    if (f_obs == NULL)
+    {
+        printf("\n\nERROR: impossible to open file '%s'", fname);
+        printf(" to write solution in time steps\n\n");
+        exit(EXIT_FAILURE);
+    }
 
     dt  = - I * realDT; // Wick rotation - attenuate e^(- i E T)
     Idt = - realDT;     // - I * dt : multiply operators after split-step
@@ -569,6 +630,29 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
             printf("    %8.5lf",maxres);
             printf("    %9.5lf",vir);
             printf("\n");
+
+            fprintf(f_obs,"%9.4lf %11.7lf %11.7lf %10.7lf\n",(k+1)*realDT,
+                    creal(E),creal(mu),maxres);
+        }
+
+        // record solution at intermediate steps to analyse convergence
+        if ( (k + 1) == 5 * (N / 100) )
+        {
+            strcpy(fname,p);
+            strcat(fname,"_5percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 10 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_10percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 50 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_50percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
         }
 
     }
@@ -585,6 +669,8 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     free(Lx);
     free(Uy);
     free(Ly);
+
+    fclose(f_obs);
 
     return N + 1;
 }

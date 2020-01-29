@@ -31,7 +31,7 @@ int RealSplitStepPR(EqDataPkg EQ, int N, double dt, Carray S, int skipFrames,
         midy;
 
     char
-	fname[100];
+        fname[100];
 
     Carray
         stepexp,
