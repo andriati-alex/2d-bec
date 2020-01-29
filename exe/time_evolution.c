@@ -198,10 +198,10 @@ int main(int argc, char * argv[])
 
 
 
-    job_file = fopen("job.conf", "r");
+    job_file = fopen("job-time.conf", "r");
     if (job_file == NULL)
     {
-        printf("\n\nERROR: impossible to open file %s\n", "job.conf");
+        printf("\n\nERROR: impossible to open file %s\n", "job-time.conf");
         exit(EXIT_FAILURE);
     }
 

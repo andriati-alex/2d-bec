@@ -739,6 +739,7 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
         mu,
         Ome,
         dev,
+        norm,
         error,
         CGtol,
         error_check;
@@ -751,6 +752,7 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
         cgi,
         fr,
         fi,
+        abs2,
         Fcg_real,
         Fcg_imag;
 
@@ -769,6 +771,7 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
     cgi = rarrDef(nx*ny);
     fr = rarrDef(nx*ny);
     fi = rarrDef(nx*ny);
+    abs2 = rarrDef(nx*ny);
     Fcg_real = rarrDef(nx*ny);
     Fcg_imag = rarrDef(nx*ny);
 
@@ -777,9 +780,10 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
 
     mu = creal(Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
     E = creal(Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
+    carrAbs2(nx*ny,f,abs2);
+    norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
 
     stationaryOp(EQ,mu,fr,fi,Fcg_real,Fcg_imag);
-
     error = maxNorm(nx*ny,Fcg_real,Fcg_imag);
     error_check = error;
 
@@ -791,73 +795,115 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
     }
 
     printf("\nNewton It.      Error      CG It.       ");
-    printf("Energy       mu");
+    printf("Energy       mu        Norm");
+    sepline();
 
 
 
     // NEWTON LOOP
     Niter = 0;
     CGiter = 0;
-    sepline();
-    while (error > err_tol)
+    while(1)
     {
+
+        // In the Newton loop the norm can be lost.  If the divergence
+        // from 1 is larger than 1E-5 correct the norm and start again
+        while (error > err_tol)
+        {
+            printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
+            printf("%9.5lf    %9.5lf  %9.6lf\n",E,mu,norm);
+
+            // Initial guess for conjugate-gradient method
+            rarrFill(nx*ny,0.0,cgr);
+            rarrFill(nx*ny,0.0,cgi);
+
+            // Solve with conj. grad. according to current newton error
+            if (1E-4 * error > 1E-2) { CGtol = 1E-2; }
+            else                     { CGtol = 1E-4 * error; }
+            CGiter = conjgrad(EQ,mu,CGtol,Fcg_real,Fcg_imag,fr,fi,cgr,cgi);
+
+            // update solution from newton iteration
+            rarrAdd(nx*ny,fr,cgr,fr);
+            rarrAdd(nx*ny,fi,cgi,fi);
+
+            for (i = 0; i < nx*ny; i++) f[i] = fr[i] + I * fi[i];
+            carrAbs2(nx*ny,f,abs2);
+            norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
+            // renormalize(nx,ny,f,hx,hy,1.0);
+            // mu = creal(Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
+            E = creal(Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
+            // carrRealPart(nx*ny,f,fr);
+            // carrImagPart(nx*ny,f,fi);
+
+            stationaryOp(EQ,mu,fr,fi,Fcg_real,Fcg_imag);
+
+            error = maxNorm(nx*ny,Fcg_real,Fcg_imag);
+
+            for (i = 0; i < nx*ny; i++)
+            {
+                Fcg_real[i] = - Fcg_real[i];
+                Fcg_imag[i] = - Fcg_imag[i];
+            }
+
+            Niter = Niter + 1;
+
+            // check if some progress is being done
+            if (Niter % 15 == 0)
+            {
+                dev = fabs(error - error_check);
+                if (dev < err_tol)
+                {
+                    printf("WARNING : Progress Stopped\n");
+                    break;
+                }
+                else error_check = error;
+            }
+
+            if (Niter > iter_tol)
+            {
+                printf("WARNING : Achieved maximum iterations allowed");
+                printf(" by the user in job-ncg.conf file. Exiting\n");
+                break;
+            }
+        }
+
+        carrAbs2(nx*ny,f,abs2);
+        norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
+        if (fabs(norm - 1.0) < 1E-4) break;
+
         printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
-        printf("%9.5lf    %9.5lf\n",E,mu);
+        printf("%9.5lf    %9.5lf  %9.6lf",E,mu,norm);
+        sepline();
 
-        // Initial guess for conjugate-gradient method
-        rarrFill(nx*ny,0.0,cgr);
-        rarrFill(nx*ny,0.0,cgi);
-
-        // Solve with conj. grad. according to current newton error
-        if (1E-3 * error > 1E-2) { CGtol = 1E-2; }
-        else                     { CGtol = 1E-3 * error; }
-        CGiter = conjgrad(EQ,mu,CGtol,Fcg_real,Fcg_imag,fr,fi,cgr,cgi);
-
-        // update solution from newton iteration
-        rarrAdd(nx*ny,fr,cgr,fr);
-        rarrAdd(nx*ny,fi,cgi,fi);
-
-        for (i = 0; i < nx*ny; i++) f[i] = fr[i] + I * fi[i];
         renormalize(nx,ny,f,hx,hy,1.0);
         mu = creal(Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
         E = creal(Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
+        carrAbs2(nx*ny,f,abs2);
+        norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
         carrRealPart(nx*ny,f,fr);
         carrImagPart(nx*ny,f,fi);
 
         stationaryOp(EQ,mu,fr,fi,Fcg_real,Fcg_imag);
-
         error = maxNorm(nx*ny,Fcg_real,Fcg_imag);
+        error_check = error;
 
+        // right hand side of linear operator passed to iteratice CG method
         for (i = 0; i < nx*ny; i++)
         {
             Fcg_real[i] = - Fcg_real[i];
             Fcg_imag[i] = - Fcg_imag[i];
         }
 
-        Niter = Niter + 1;
-
-        // check if some progress is being done
-        if (Niter % 15 == 0)
-        {
-            dev = fabs(error - error_check);
-            if (dev < err_tol)
-            {
-                printf("WARNING : Progress Stopped\n");
-                break;
-            }
-            else error_check = error;
-        }
-
-        if (Niter > iter_tol)
-        {
-            printf("WARNING : Achieved maximum iterations allowed");
-            printf(" by the user in job-ncg.conf file. Exiting\n");
-            break;
-        }
+        Niter = 0;
+        CGiter = 0;
+        printf("Renormalizing and starting again\n");
+        printf("\nNewton It.      Error      CG It.       ");
+        printf("Energy       mu        Norm");
+        sepline();
     }
 
     printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
-    printf("%9.5lf    %9.5lf",E,mu);
+    printf("%9.5lf    %9.5lf  %9.6lf",E,mu,norm);
     sepline();
 
     free(fr);
@@ -866,4 +912,5 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
     free(Fcg_imag);
     free(cgr);
     free(cgi);
+    free(abs2);
 }

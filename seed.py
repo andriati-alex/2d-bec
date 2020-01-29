@@ -6,6 +6,7 @@ from scipy.integrate import simps;
 from pathlib import Path;
 from math import sqrt;
 
+from numba import jit, prange, int32, uint32, uint64, int64, float64, complex128;
 
 
 
@@ -62,11 +63,9 @@ def ChargeVortex(x, y, n):
 
     for k in range(y.size):
         for l in range(x.size):
-            #ph = expargx[l] + expargy[k];
-            #rl = (x[l] + 1.0j*y[k])**n / fac(n);
-            #S[k,l] = rl*np.exp(ph);
-            rl = sqrt(x[l]*x[l] + y[k]*y[k]);
-            S[k,l] = rl/np.cosh(rl);
+            ph = expargx[l] + expargy[k];
+            rl = (x[l] + 1.0j*y[k])**n / fac(n);
+            S[k,l] = rl*np.exp(ph);
 
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
@@ -81,8 +80,6 @@ def ChargeVortex(x, y, n):
 def VortexLattice(x, y, n):
 
     n = int(n);
-    Lx = x[-1] - x[0];
-    Ly = y[-1] - y[0];
 
     S = np.zeros([y.size,x.size],dtype=np.complex128);
 
@@ -90,6 +87,32 @@ def VortexLattice(x, y, n):
     noise = np.pi * (np.random.random(int(n)) - 0.5) / 0.5;
     # generate noise point-wise in the grid
     gnoise = (np.random.random(S.shape)-0.5) * 0.2;
+    # weight of modes
+    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(1,n+1)));
+
+    # Compiled function to sum up all modes
+    VortexLatticeAux(x.size,y.size,x,y,n,noise,gnoise,w,S);
+
+    # additional point-wise random phase
+    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5)*np.pi/4);
+
+    # normalize to 1
+    abs2 = abs(S)**2;
+    intx = np.zeros(y.size,dtype=np.float64);
+    for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
+
+    return S / sqrt(simps(intx, dx = y[1]-y[0]));
+
+
+
+
+
+@jit( (uint32,uint32,float64[:],float64[:],uint32,float64[:],float64[:,:],
+            float64[:],complex128[:,:]) , nopython=True, nogil=True)
+def VortexLatticeAux(nx,ny,x,y,n,noise,gnoise,w,S):
+
+    Lx = x[-1] - x[0];
+    Ly = y[-1] - y[0];
 
     # Localized by a Gaussian like-shape
     sigx = 0.33 * sqrt(Lx);
@@ -97,24 +120,18 @@ def VortexLattice(x, y, n):
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
 
-    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(1,n+1)));
-    expargx = - ((x - midx) / sigx)**2;
-    expargy = - ((y - midy) / sigy)**2;
+    expargx = 0;
+    expargy = 0;
+    ph = 0 + 0.0j;
 
-    for i in range(int(n)):
-        for k in range(y.size):
-            for l in range(x.size):
-                ph = 1.0j * noise[i] + expargx[l] + expargy[k];
+    for i in prange(n):
+        for k in prange(ny):
+            expargy = - ((y[k] - midy) / sigy)**2;
+            for l in prange(nx):
+                expargx = - ((x[l] - midx) / sigx)**2;
+                ph = 1.0j * noise[i] + expargx + expargy;
                 rl = (x[l] + 1.0j*y[k])**(i+1);
                 S[k,l] = S[k,l] + (rl + gnoise[k,l])*w[i]*np.exp(ph);
-
-    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5)*np.pi/4);
-
-    abs2 = abs(S)**2;
-    intx = np.zeros(y.size,dtype=np.float64);
-    for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
-
-    return S / sqrt(simps(intx, dx = y[1]-y[0]));
 
 
 
@@ -173,7 +190,7 @@ y = np.linspace(y1, y2, ny);
 
 ##  Generate initial trial function in grid points
 if (seedName == 'rotating') :
-    S = VortexLattice(x,y,35).reshape(nx*ny);
+    S = VortexLattice(x,y,45).reshape(nx*ny);
 elif (seedName == 'gaussian') :
     S = gaussian(x,y).reshape(nx*ny);
 elif (seedName == 'vortex') :
@@ -203,5 +220,5 @@ f.close();
 ##  for the desired problem
 f = open(folder + seedName + '_eq.dat', "w");
 if (seedName == 'stationary') : f.write("-0.5 0.0 10.0 1.0 1.0 0.0 0.0");
-else : f.write("-0.5 0.8 50.0 1.0 1.0 0.0 0.0");
+else : f.write("-0.5 0.8 50.0 1.0 1.0 0.0 0.0 0.0");
 f.close();
