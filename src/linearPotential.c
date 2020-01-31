@@ -51,16 +51,18 @@ void HarmonicMexicanHat(int nx, int ny, Rarray x, Rarray y, Rarray V,
 
     double
         x2,
-        y2;
+        y2,
+        y2asym;
 
     for (i = 0; i < nx; i ++)
     {
         for (j = 0; j < ny; j++)
         {
             x2 = x[i] * x[i];
-            y2 = asym * asym * y[j] * y[j];
+            y2 = y[j] * y[j];
+            y2asym = asym * asym * y2;
             V[i + j*nx] = 0.5 * (wx*wx*x2 + wy*wy*y2) + \
-                          height * exp(-(x2 + y2) / width / width);
+                          height * exp(-(x2 + y2asym) / width / width);
         }
     }
 }
@@ -76,16 +78,18 @@ void QuarticMexicanHat(int nx, int ny, Rarray x, Rarray y, Rarray V,
 
     double
         x2,
-        y2;
+        y2,
+        y2asym;
 
     for (i = 0; i < nx; i ++)
     {
         for (j = 0; j < ny; j++)
         {
             x2 = x[i] * x[i];
-            y2 = asym * asym * y[j] * y[j];
+            y2 = y[j] * y[j];
+            y2asym = asym * asym * y2;
             V[i + j*nx] = 0.5 * (wx*wx*x2*x2 + wy*wy*y2*y2) + \
-                          height * exp(-(x2 + y2) / width / width);
+                          height * exp(-(x2 + y2asym) / width / width);
         }
     }
 }
