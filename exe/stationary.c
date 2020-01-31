@@ -68,8 +68,8 @@ void SaveConf(FILE * f, EqDataPkg EQ, double dt, int N)
 
     // Equation parameters
     fprintf(f, "%.15lf %.15lf %.15lf ", EQ->b, EQ->Ome, EQ->g);
-    fprintf(f, "%.15lf %.15lf %.15lf %.15lf\n",
-            EQ->p[0], EQ->p[1], EQ->p[2], EQ->p[3]);
+    fprintf(f, "%.15lf %.15lf %.15lf %.15lf %.15lf\n",
+            EQ->p[0], EQ->p[1], EQ->p[2], EQ->p[3], EQ->p[4]);
 
 }
 
@@ -97,7 +97,7 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
         xf,
         yi,
         yf,
-        p[4];
+        p[5];
 
 
 
@@ -109,8 +109,8 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
     k = fscanf(confFile, "%lf %d", dt, N);
 
     // Read a line of numbers corresponding to equation parameters
-    k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
-        &p[0], &p[1], &p[2], &p[3]);
+    k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
+        &p[0], &p[1], &p[2], &p[3], &p[4]);
 
     return PackEqData(nx,ny,xi,xf,yi,yf,b,g,Ome,Vname,p);
 

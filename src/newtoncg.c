@@ -853,7 +853,7 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
                 dev = fabs(error - error_check);
                 if (dev < err_tol)
                 {
-                    printf("WARNING : Progress Stopped\n");
+                    printf("\nWARNING : Progress Stopped\n");
                     break;
                 }
                 else error_check = error;
@@ -861,15 +861,15 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
 
             if (Niter > iter_tol)
             {
-                printf("WARNING : Achieved maximum iterations allowed");
+                printf("\nWARNING : Achieved maximum iterations allowed");
                 printf(" by the user in job-ncg.conf file. Exiting\n");
                 break;
             }
         }
 
-        carrAbs2(nx*ny,f,abs2);
-        norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
-        if (fabs(norm - 1.0) < 1E-4) break;
+        // carrAbs2(nx*ny,f,abs2);
+        // norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
+        // if (fabs(norm - 1.0) < 1E-4) break;
 
         printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
         printf("%9.5lf    %9.5lf  %9.6lf",E,mu,norm);
@@ -894,12 +894,12 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
             Fcg_imag[i] = - Fcg_imag[i];
         }
 
-        Niter = 0;
-        CGiter = 0;
-        printf("Renormalizing and starting again\n");
+        printf("Renormalizing\n");
         printf("\nNewton It.      Error      CG It.       ");
         printf("Energy       mu        Norm");
         sepline();
+
+        if (error < err_tol) break;
     }
 
     printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
