@@ -18,23 +18,22 @@ from numba import jit, prange, int32, uint32, uint64, int64, float64, complex128
     GENERATE INITIAL CONDITION DATA
     -------------------------------
 
-    Given a keyword generate one of some pre-defined initial condition
-    data, like solitons, or others yet to be implemented. This initial
-    condition can be take to be time evolved or as initial guess  to a
-    method to obtain stationary solution for Gross-Pitaevskii equation
+    Implementation of useful functions to generate initial conditions for
+    the main program, to solve the time dependent GP equation
 
 
 
     CALL IN COMMAND LINE
     --------------------
 
-    python generate_init.py x1 x2 M Id extra_params
+    python seed.py xi xf Nx yi yf Ny Seed_Name extra_params
 
-    where [x1, x2] is the position domain and M the number of
-    discretized intervals. The number of points therefore  is
-    M + 1 in an vector holding each position value. Id is the
-    function Identification to generate data and extra_params
-    to be able to evalute it.
+    The data is generated in the grid domain [xi,xf] x [yi,yf] with Nx
+    discretized points along  x-direction and  Ny along y-direction. A
+    'Seed_Name' is required and must be one of the following functions
+    in this script. Finally, the files are created in input folder and
+    the user must open and change the '*_eq.dat' file to change the eq
+    parameters as desired
 
 
 =============================================================================
@@ -45,7 +44,6 @@ from numba import jit, prange, int32, uint32, uint64, int64, float64, complex128
 
 
 def ChargeVortex(x, y, n):
-
     n = int(n); # the charge of a single centered vortex
     Lx = x[-1] - x[0];
     Ly = y[-1] - y[0];
@@ -53,8 +51,8 @@ def ChargeVortex(x, y, n):
     S = np.zeros([y.size,x.size],dtype=np.complex128);
 
     # Localized by a Gaussian like-shape
-    sigx = 0.12 * Lx;
-    sigy = 0.12 * Ly;
+    sigx = 0.33 * sqrt(Lx);
+    sigy = 0.33 * sqrt(Ly);
     midx = (x[-1] + x[0]) / 2;
     midy = (y[-1] + y[0]) / 2;
 
@@ -64,9 +62,10 @@ def ChargeVortex(x, y, n):
     for k in range(y.size):
         for l in range(x.size):
             ph = expargx[l] + expargy[k];
-            rl = (x[l] + 1.0j*y[k])**n / fac(n);
+            rl = (x[l] + 1.0j*y[k])**n / sqrt(fac(n));
             S[k,l] = rl*np.exp(ph);
 
+    # normalize to 1
     abs2 = abs(S)**2;
     intx = np.zeros(y.size,dtype=np.float64);
     for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
@@ -102,8 +101,6 @@ def VortexLattice(x, y, n):
     for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
 
     return S / sqrt(simps(intx, dx = y[1]-y[0]));
-
-
 
 
 
@@ -164,13 +161,6 @@ def gaussian(x, y):
 
 
 
-#              Domain discretization parameters               #
-#              --------------------------------               #
-
-
-
-
-
 ##  Read command line arguments
 x1 = np.float64(sys.argv[1]);
 x2 = np.float64(sys.argv[2]);
@@ -190,7 +180,7 @@ y = np.linspace(y1, y2, ny);
 
 ##  Generate initial trial function in grid points
 if (seedName == 'rotating') :
-    S = VortexLattice(x,y,45).reshape(nx*ny);
+    S = VortexLattice(x,y,55).reshape(nx*ny);
 elif (seedName == 'gaussian') :
     S = gaussian(x,y).reshape(nx*ny);
 elif (seedName == 'vortex') :
