@@ -135,6 +135,7 @@ int main(int argc, char * argv[])
         k,
         nx, // number of grid points along x
         ny, // number of grid points along y
+        Njobs, // number of progressive calculations to perform
         iter_tol; // Maximum allowed iterations in newton method
 
 
@@ -151,6 +152,7 @@ int main(int argc, char * argv[])
 
     char
         c,
+        strnum[30],
         fname[100],     // name of files to open
         potname[50],    // name of trap function in linearPotential.c
         infname[100],   // input file name prefix
@@ -223,6 +225,10 @@ int main(int argc, char * argv[])
                 fscanf(job_file, "%d", &iter_tol);
                 i = i + 1;
                 break;
+            case 6:
+                fscanf(job_file, "%d", &Njobs);
+                i = i + 1;
+                break;
         }
 
         ReachNewLine(job_file);
@@ -248,7 +254,6 @@ int main(int argc, char * argv[])
 
 
 
-    // open file with values of equation's parameters
     printf("\n\n");
     printf("\t\t*********************************************\n");
     printf("\t\t*                                           *\n");
@@ -256,12 +261,13 @@ int main(int argc, char * argv[])
     printf("\t\t*                                           *\n");
     printf("\t\t*********************************************\n");
 
+    // open file with values of equation's parameters
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_eq.dat");
     printf("\nLooking for %s", fname);
     eq_file = fopen(fname, "r");
-    if (eq_file == NULL)  // impossible to open file
+    if (eq_file == NULL)
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
         exit(EXIT_FAILURE);
@@ -319,7 +325,10 @@ int main(int argc, char * argv[])
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
         exit(EXIT_FAILURE);
     }
-    fprintf(job_file, "# Trap name : %s\n", potname);
+    fprintf(job_file,"# Parameters from stationary state obtained");
+    fprintf(job_file," with Newton-CG\n");
+    fprintf(job_file,"# Trap name : %s (Consult linearPotential.c file)\n",
+            potname);
 
 
 
@@ -369,6 +378,7 @@ int main(int argc, char * argv[])
     printf("y = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
 	        EQ->y[0],EQ->y[1],EQ->y[ny-2],EQ->y[ny-1]);
     printf("%d points for y-direction | y-grid-spacing = %.3lf\n",ny,EQ->hy);
+    printf("\nNewton error_tol = %.1E | iter_tol = %d\n\n",err_tol,iter_tol);
 
 
 
@@ -381,12 +391,12 @@ int main(int argc, char * argv[])
 
     /*********************************************************************
      *********************************************************************
-     ********************    CALL INTEGRATION ROUTINE    *****************
+     *********************    CALL NEWTON-CG ROUTINE    ******************
      *********************************************************************
      *********************************************************************/
 
-    printf("\n\nStarting the iterations");
-    printf(" : error_tol = %.1E | iter_tol = %d\n\n",err_tol,iter_tol);
+    printf("\n\n\n\n\n\n\n\n");
+    printf("Starting the iterations for line 1 of input files\n");
 
     start = omp_get_wtime();
 
@@ -394,16 +404,49 @@ int main(int argc, char * argv[])
 
     time_used = (double) (omp_get_wtime() - start);
 
-    printf("\n\nTime taken for Newton-CG : %.0lf sec = ",time_used);
+    printf("\nTime taken in job 1 : %.0lf sec = ",time_used);
     TimePrint(time_used);
 
     // Record data
-    strcpy(fname, "output/");
-    strcat(fname, outfname);
-    strcat(fname, "_ncg.dat");
+    strcpy(fname,"output/");
+    strcat(fname,outfname);
+    strcat(fname,"_job1");
+    strcat(fname,"_ncg.dat");
 
     carr_txt(fname,nx*ny,S);
     SaveConf(job_file,EQ,dt,N);
+
+    for (i = 1; i < Njobs; i++)
+    {
+        // Setup again the parameters reading from the new line
+        ReleaseEqDataPkg(EQ);
+        EQ = SetupParams(eq_file,domain_file,potname,&dt,&N);
+
+        // number of line reading in _conf.dat and _eq.dat files
+        sprintf(strnum, "%d",i+1);
+
+        printf("\n\n\n\n\n\n\n\n");
+        printf("Starting the iterations for line %d of input files\n",i+1);
+
+        start = omp_get_wtime();
+
+        stationaryNewton(EQ,S,err_tol,iter_tol);
+
+        time_used = (double) (omp_get_wtime() - start);
+
+        printf("\nTime taken in job %d : %.0lf sec = ",i+1,time_used);
+        TimePrint(time_used);
+
+        // Record data
+        strcpy(fname,"output/");
+        strcat(fname,outfname);
+        strcat(fname,"_job");
+        strcat(fname,strnum);
+        strcat(fname,"_ncg.dat");
+
+        carr_txt(fname,nx*ny,S);
+        SaveConf(job_file,EQ,dt,N);
+    }
 
 
 
@@ -420,6 +463,6 @@ int main(int argc, char * argv[])
 
 
 
-    printf("\n\nDone\n\n");
+    printf("\n\n-- Done --\n\n");
     return 0;
 }

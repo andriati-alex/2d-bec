@@ -794,8 +794,8 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
         Fcg_imag[i] = - Fcg_imag[i];
     }
 
-    printf("\nNewton It.      Error      CG It.       ");
-    printf("Energy       mu        Norm");
+    printf("\nNewton It.      Error    CG It.     ");
+    printf("Energy     mu        Norm");
     sepline();
 
 
@@ -810,8 +810,8 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
         // from 1 is larger than 1E-5 correct the norm and start again
         while (error > err_tol)
         {
-            printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
-            printf("%9.5lf    %9.5lf  %9.6lf\n",E,mu,norm);
+            printf("%5d       %10.5lf   %6d   ",Niter,error,CGiter);
+            printf("%9.5lf  %9.5lf  %9.6lf\n",E,mu,norm);
 
             // Initial guess for conjugate-gradient method
             rarrFill(nx*ny,0.0,cgr);
@@ -859,21 +859,15 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
                 else error_check = error;
             }
 
-            if (Niter > iter_tol)
-            {
-                printf("\nWARNING : Achieved maximum iterations allowed");
-                printf(" by the user in job-ncg.conf file. Exiting\n");
-                break;
-            }
+            if (Niter > iter_tol) break;
         }
 
         // carrAbs2(nx*ny,f,abs2);
         // norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
         // if (fabs(norm - 1.0) < 1E-4) break;
 
-        printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
-        printf("%9.5lf    %9.5lf  %9.6lf",E,mu,norm);
-        sepline();
+        printf("%5d       %10.5lf   %6d   ",Niter,error,CGiter);
+        printf("%9.5lf  %9.5lf  %9.6lf\n",E,mu,norm);
 
         renormalize(nx,ny,f,hx,hy,1.0);
         mu = creal(Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,f));
@@ -894,17 +888,25 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
             Fcg_imag[i] = - Fcg_imag[i];
         }
 
-        printf("Renormalizing\n");
-        printf("\nNewton It.      Error      CG It.       ");
-        printf("Energy       mu        Norm");
-        sepline();
+        printf("Renormalizing");
+        printf("  -------------------------");
+        printf("-------------------------\n");
+        //printf("\nNewton It.      Error      CG It.       ");
+        //printf("Energy       mu        Norm");
+        //sepline();
 
-        if (error < err_tol) break;
+        if (error < err_tol || Niter > iter_tol) break;
     }
 
-    printf("%5d       %10.5lf     %6d     ",Niter,error,CGiter);
-    printf("%9.5lf    %9.5lf  %9.6lf",E,mu,norm);
+    printf("%5d       %10.5lf   %6d   ",Niter,error,CGiter);
+    printf("%9.5lf  %9.5lf  %9.6lf",E,mu,norm);
     sepline();
+
+    if (Niter > iter_tol)
+    {
+        printf("\nWARNING : Achieved maximum iterations allowed");
+        printf(" by the user in job-ncg.conf file. Exiting\n");
+    }
 
     free(fr);
     free(fi);
