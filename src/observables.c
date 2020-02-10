@@ -98,6 +98,53 @@ doublec Chem(int nx, int ny, double hx, double hy, double b, double Ome,
 
 
 
+doublec angularMom(int nx, int ny, double hx, double hy, Rarray x, Rarray y,
+               Carray f)
+{
+
+    int
+        j,
+        i;
+
+    double complex
+        lz,
+        lzDensity;
+
+    Carray
+        dfdx,
+        dfdy,
+        Integ;
+
+    dfdx = carrDef(nx*ny);
+    dfdy = carrDef(nx*ny);
+    Integ = carrDef(nx*ny);
+
+    DfDx(nx,ny,f,hx,dfdx);
+    DfDy(nx,ny,f,hy,dfdy);
+
+    for (i = 0; i < nx; i++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            lzDensity = I * conj(f[i + j*nx]) * \
+                        (y[j]*dfdx[i + j*nx] - x[i]*dfdy[i + j*nx]);
+            Integ[i + j*nx] = lzDensity;
+        }
+    }
+
+    lz = Csimps2D(nx,ny,Integ,hx,hy);
+
+    // release memory
+    free(dfdx); free(dfdy); free(Integ);
+
+    return lz;
+
+}
+
+
+
+
+
 doublec Energy(int nx, int ny, double hx, double hy, double b, double Ome,
         double g, Rarray V, Rarray x, Rarray y, Carray f)
 {

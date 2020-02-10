@@ -14,6 +14,8 @@ doublec Chem(int, int, double, double, double, double, double, Rarray,
 doublec Energy(int, int, double, double, double, double, double, Rarray,
         Rarray, Rarray, Carray);
 
+doublec angularMom(int, int, double, double, Rarray, Rarray, Carray);
+
 
 
 double Kinect(int nx, int ny, double hx, double hy, double b, Carray f);

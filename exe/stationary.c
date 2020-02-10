@@ -7,6 +7,17 @@
 
 
 
+void CheckOpenedFile(FILE * f, char fname [])
+{
+    if (f == NULL) // not opened
+    {
+        printf("\n\nERROR: impossible to open file %s\n\n", fname);
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+
 void TimePrint(double t)
 {
     
@@ -48,7 +59,7 @@ void ReachNewLine(FILE * f)
 
 
 
-void SaveConf(FILE * f, EqDataPkg EQ, double dt, int N)
+void recordConf(FILE * f, EqDataPkg EQ, double dt, int N)
 {
 
     double
@@ -70,6 +81,31 @@ void SaveConf(FILE * f, EqDataPkg EQ, double dt, int N)
     fprintf(f, "%.15lf %.15lf %.15lf ", EQ->b, EQ->Ome, EQ->g);
     fprintf(f, "%.15lf %.15lf %.15lf %.15lf %.15lf\n",
             EQ->p[0], EQ->p[1], EQ->p[2], EQ->p[3], EQ->p[4]);
+
+}
+
+
+
+
+
+void recordObs(FILE * f, EqDataPkg EQ, Carray S)
+{
+
+    double complex
+        mu,
+        lz,
+        E;
+
+    mu = Chem(EQ->nx,EQ->ny,EQ->hx,EQ->hy,EQ->b,EQ->Ome,EQ->g,EQ->V,EQ->x,
+              EQ->y,S);
+
+    E = Energy(EQ->nx,EQ->ny,EQ->hx,EQ->hy,EQ->b,EQ->Ome,EQ->g,EQ->V,EQ->x,
+              EQ->y,S);
+    
+    lz = angularMom(EQ->nx,EQ->ny,EQ->hx,EQ->hy,EQ->x,EQ->y,S);
+
+    // Grid domain
+    fprintf(f, "%14.10lf %14.10lf %14.10lf\n",creal(E),creal(mu),creal(lz));
 
 }
 
@@ -162,6 +198,7 @@ int main(int argc, char * argv[])
 
     FILE
         * domain_file,
+        * obs_file,
         * job_file,
         * f0_file,
         * eq_file;
@@ -186,11 +223,7 @@ int main(int argc, char * argv[])
 
 
     job_file = fopen("job-ncg.conf","r");
-    if (job_file == NULL)
-    {
-        printf("\n\nERROR: impossible to open file %s\n\n","job-ncg.conf");
-        exit(EXIT_FAILURE);
-    }
+    CheckOpenedFile(job_file,"job-ncg.conf");
 
 
 
@@ -265,17 +298,12 @@ int main(int argc, char * argv[])
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_eq.dat");
+
     printf("\nLooking for %s", fname);
+
     eq_file = fopen(fname, "r");
-    if (eq_file == NULL)
-    {
-        printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        printf(" ....... Found !");
-    }
+    CheckOpenedFile(eq_file,fname);
+    printf(" ....... Found !");
 
 
 
@@ -283,17 +311,12 @@ int main(int argc, char * argv[])
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_domain.dat");
+
     printf("\nLooking for %s", fname);
+
     domain_file = fopen(fname, "r");
-    if (domain_file == NULL)  // impossible to open file
-    {
-        printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        printf(" ... Found !");
-    }
+    CheckOpenedFile(domain_file,fname);
+    printf(" ... Found !");
 
 
 
@@ -301,17 +324,12 @@ int main(int argc, char * argv[])
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_init.dat");
+
     printf("\nLooking for %s", fname);
+
     f0_file = fopen(fname, "r");
-    if (f0_file == NULL)  // impossible to open file
-    {
-        printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        exit(EXIT_FAILURE);
-    }
-    else
-    {
-        printf(" ..... Found !");
-    }
+    CheckOpenedFile(f0_file,fname);
+    printf(" ..... Found !");
 
 
 
@@ -319,12 +337,9 @@ int main(int argc, char * argv[])
     strcpy(fname,"output/");
     strcat(fname, outfname);
     strcat(fname,"_conf_ncg.dat");
+
     job_file = fopen(fname, "w");
-    if (job_file == NULL)  // impossible to open file
-    {
-        printf("\n\nERROR: impossible to open file %s\n\n", fname);
-        exit(EXIT_FAILURE);
-    }
+    CheckOpenedFile(job_file,fname);
     fprintf(job_file,"# Parameters from stationary state obtained");
     fprintf(job_file," with Newton-CG\n");
     fprintf(job_file,"# Trap name : %s (Consult linearPotential.c file)\n",
@@ -395,6 +410,14 @@ int main(int argc, char * argv[])
      *********************************************************************
      *********************************************************************/
 
+    // open file to write some observables
+    strcpy(fname,"output/");
+    strcat(fname, outfname);
+    strcat(fname,"_obs_ncg.dat");
+
+    obs_file = fopen(fname, "w");
+    CheckOpenedFile(job_file,fname);
+
     printf("\n\n\n\n\n\n\n\n");
     printf("Starting the iterations for line 1 of input files\n");
 
@@ -414,7 +437,8 @@ int main(int argc, char * argv[])
     strcat(fname,"_ncg.dat");
 
     carr_txt(fname,nx*ny,S);
-    SaveConf(job_file,EQ,dt,N);
+    recordConf(job_file,EQ,dt,N);
+    recordObs(obs_file,EQ,S);
 
     for (i = 1; i < Njobs; i++)
     {
@@ -445,13 +469,15 @@ int main(int argc, char * argv[])
         strcat(fname,"_ncg.dat");
 
         carr_txt(fname,nx*ny,S);
-        SaveConf(job_file,EQ,dt,N);
+        recordConf(job_file,EQ,dt,N);
+        recordObs(obs_file,EQ,S);
     }
 
 
 
 
 
+    fclose(obs_file);
     fclose(job_file);
     fclose(eq_file);
     fclose(domain_file);

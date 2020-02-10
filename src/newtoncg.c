@@ -862,10 +862,6 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
             if (Niter > iter_tol) break;
         }
 
-        // carrAbs2(nx*ny,f,abs2);
-        // norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
-        // if (fabs(norm - 1.0) < 1E-4) break;
-
         printf("%5d       %10.5lf   %6d   ",Niter,error,CGiter);
         printf("%9.5lf  %9.5lf  %9.6lf\n",E,mu,norm);
 
@@ -891,9 +887,6 @@ void stationaryNewton(EqDataPkg EQ, Carray f, double err_tol, int iter_tol)
         printf("Renormalizing");
         printf("  -------------------------");
         printf("-------------------------\n");
-        //printf("\nNewton It.      Error      CG It.       ");
-        //printf("Energy       mu        Norm");
-        //sepline();
 
         if (error < err_tol || Niter > iter_tol) break;
     }
