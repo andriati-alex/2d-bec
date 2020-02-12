@@ -104,6 +104,42 @@ def VortexLattice(x, y, n):
 
 
 
+
+
+def leftWell(x, y, n):
+
+    n = int(n);
+
+    S = np.zeros([y.size,x.size],dtype=np.complex128);
+
+    # generate random numbers in the range [-1,1]
+    noise = np.pi * (np.random.random(int(n)) - 0.5) / 0.5;
+    # generate noise point-wise in the grid
+    gnoise = (np.random.random(S.shape)-0.5) * 0.2;
+    # weight of modes
+    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(1,n+1)));
+
+    # Compiled function to sum up all modes
+    VortexLatticeAux(x.size,y.size,x,y,n,noise,gnoise,w,S);
+
+    # additional point-wise random phase
+    S = S * np.exp(1.0j*(np.random.random(S.shape)-0.5)*np.pi/4);
+
+    # vanish half size of the domain
+    half = int(x.size / 2 - 2)
+    for j in range(y.size) : S[j,half:] = 0.0
+
+    # normalize to 1
+    abs2 = abs(S)**2;
+    intx = np.zeros(y.size,dtype=np.float64);
+    for i in range(y.size): intx[i] = simps(abs2[i], dx = x[1]-x[0]);
+
+    return S / sqrt(simps(intx, dx = y[1]-y[0]));
+
+
+
+
+
 @jit( (uint32,uint32,float64[:],float64[:],uint32,float64[:],float64[:,:],
             float64[:],complex128[:,:]) , nopython=True, nogil=True)
 def VortexLatticeAux(nx,ny,x,y,n,noise,gnoise,w,S):
@@ -185,6 +221,8 @@ elif (seedName == 'gaussian') :
     S = gaussian(x,y).reshape(nx*ny);
 elif (seedName == 'vortex') :
     S = ChargeVortex(x,y,1).reshape(nx*ny);
+elif (seedName == 'leftWell') :
+    S = leftWell(x,y,55).reshape(nx*ny);
 else :
     raise NameError('Seed name %s not recognized.\n' % seedName);
 
