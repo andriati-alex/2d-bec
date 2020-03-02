@@ -10,6 +10,9 @@ void harmonic(int,int,Rarray,Rarray,Rarray,double,double);
 
 void quartic(int,int,Rarray,Rarray,Rarray,double,double);
 
+void quarticQuadratic(int nx, int ny, Rarray x, Rarray y, Rarray V,
+     double wy, double a, double b);
+
 void HarmonicMexicanHat(int,int,Rarray,Rarray,Rarray,double,double,double,
         double,double);
 

@@ -42,6 +42,39 @@ void quartic(int nx, int ny, Rarray x, Rarray y, Rarray V, double wx, double wy)
 
 
 
+void quarticQuadratic(int nx, int ny, Rarray x, Rarray y, Rarray V,
+     double wy, double a, double b)
+{
+    int
+        i,
+        j;
+
+    double
+        a4,
+        a2,
+        b2,
+        x2,
+        x4,
+        y2;
+
+    a2 = a * a;
+    b2 = b * b;
+    a4 = a2 * a2;
+
+    for (i = 0; i < nx; i ++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            x4 = x[i] * x[i] * x[i] * x[i];
+            x2 = x[i] * x[i];
+            y2 = y[j] * y[j];
+            V[i + j*nx] = 0.5*(-a2*x2 + wy*wy*y2) + 0.25*b2*x4 + 0.25*a4/b2;
+        }
+    }
+}
+
+
+
 void HarmonicMexicanHat(int nx, int ny, Rarray x, Rarray y, Rarray V,
      double wx, double wy, double height, double width, double asym)
 {
@@ -130,6 +163,18 @@ void GetPotential(char name [], int nx, int ny, Rarray x, Rarray y, Rarray V,
         return;
     }
 
+    if (strcmp(name, "quarticQuadratic") == 0)
+    {
+        if (p[0] <= 0 || p[1] <= 0)
+        {
+            printf("\n\nQuartic Trap parameters must be positive\n");
+            exit(EXIT_FAILURE);
+        }
+
+        quarticQuadratic(nx,ny,x,y,V,p[0],p[1],p[2]);
+        return;
+    }
+
     if (strcmp(name, "HarmonicMexicanHat") == 0)
     {
         if (p[0] <= 0 || p[1] <= 0 || p[2] <= 0)
@@ -143,7 +188,7 @@ void GetPotential(char name [], int nx, int ny, Rarray x, Rarray y, Rarray V,
         return;
     }
 
-    if (strcmp(name, "QaurticMexicanHat") == 0)
+    if (strcmp(name, "QuarticMexicanHat") == 0)
     {
         if (p[0] <= 0 || p[1] <= 0 || p[2] <= 0)
         {
