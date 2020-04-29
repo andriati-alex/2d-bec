@@ -47,13 +47,14 @@ from numba import jit, prange, int32, uint32, uint64, int64, float64, complex128
 def VortexLattice(x,y,den,n):
     n = int(n);
     S = np.zeros([y.size,x.size],dtype=np.complex128);
+    S[:,:] = np.sqrt(den[:,:]);
 
     # phase-noise among the modes of ang. mom. added
     noise = np.pi * (np.random.random(int(n)) - 0.5) / 0.5;
     # grid-noise for every point in domain
     gnoise = (np.random.random(S.shape)-0.5) * 0.2;
     # weight of modes
-    w = np.sqrt(1.0*np.ones(n) / fac(np.arange(1,n+1)));
+    w = (1.0*np.ones(n) / fac(np.arange(1,n+1)))**(0.58);
 
     # Compiled function to sum up all modes
     VortexLatticeAux(x.size,y.size,x,y,n,noise,gnoise,w,den,S);
@@ -92,7 +93,7 @@ def VortexLatticeAux(nx,ny,x,y,n,noise,gnoise,w,den,S):
                 expargx = - ((x[l] - midx) / sigx)**2
                 ph = np.exp(1.0j * noise[i] + expargx + expargy)
                 # Ang. mom. mode
-                rl = (x[l] + 1.0j*y[k])**(i+1)
+                rl = (x[l] + 1.0j*y[k])**(i)
                 newmode = rl*(1+gnoise[k,l])*w[i]*sqrt(den[k,l])*ph
                 S[k,l] = S[k,l] + newmode
 
@@ -123,13 +124,13 @@ b = params[4]
 # GENERATE GRID POINTS AND TRAP AT GRID POINTS
 x = np.linspace(x1,x2,nx)
 y = np.linspace(y1,y2,ny)
-V = tf.quarticXYQuadraticXY(x,y,w,a,b)
+V = tf.quarticXQuadraticXY(x,y,w,a,b)
 
 # CHEMICAL POTENTIAL AND FINALLY TF DENSITY PROFILE
 mu = tf.searchNG(x,y,Ng,rot,V)
 den = tf.den(x,y,mu,rot,V) / Ng
 
-S = VortexLattice(x,y,den,105).reshape(nx*ny);
+S = VortexLattice(x,y,den,100).reshape(nx*ny);
 
 seedName = 'rotating'
 
