@@ -42,7 +42,7 @@ void quartic(int nx, int ny, Rarray x, Rarray y, Rarray V, double wx, double wy)
 
 
 
-void quarticQuadratic(int nx, int ny, Rarray x, Rarray y, Rarray V,
+void quarticXQuadratic(int nx, int ny, Rarray x, Rarray y, Rarray V,
      double wy, double a, double b)
 {
     int
@@ -69,6 +69,39 @@ void quarticQuadratic(int nx, int ny, Rarray x, Rarray y, Rarray V,
             x2 = x[i] * x[i];
             y2 = y[j] * y[j];
             V[i + j*nx] = 0.5*(-a2*x2 + wy*wy*y2) + 0.25*b2*x4 + 0.25*a4/b2;
+        }
+    }
+}
+
+
+
+void quarticRQuadratic(int nx, int ny, Rarray x, Rarray y, Rarray V,
+     double wy, double a, double b)
+{
+    int
+        i,
+        j;
+
+    double
+        a4,
+        a2,
+        b2,
+        x2,
+        r4,
+        y2;
+
+    a2 = a * a;
+    b2 = b * b;
+    a4 = a2 * a2;
+
+    for (i = 0; i < nx; i ++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            x2 = x[i] * x[i];
+            y2 = y[j] * y[j];
+            r4 = (x2 + y2) * (x2 + y2);
+            V[i + j*nx] = 0.5*(-a2*x2 + wy*wy*y2) + 0.25*b2*r4 + 0.25*a4/b2;
         }
     }
 }
@@ -163,15 +196,27 @@ void GetPotential(char name [], int nx, int ny, Rarray x, Rarray y, Rarray V,
         return;
     }
 
-    if (strcmp(name, "quarticQuadratic") == 0)
+    if (strcmp(name, "quarticXQuadratic") == 0)
     {
-        if (p[0] <= 0 || p[1] <= 0)
+        if (p[0] <= 0 || p[2] <= 0)
         {
             printf("\n\nQuartic Trap parameters must be positive\n");
             exit(EXIT_FAILURE);
         }
 
-        quarticQuadratic(nx,ny,x,y,V,p[0],p[1],p[2]);
+        quarticXQuadratic(nx,ny,x,y,V,p[0],p[1],p[2]);
+        return;
+    }
+
+    if (strcmp(name, "quarticRQuadratic") == 0)
+    {
+        if (p[2] <= 0)
+        {
+            printf("\n\nQuartic Trap parameters must be positive\n");
+            exit(EXIT_FAILURE);
+        }
+
+        quarticRQuadratic(nx,ny,x,y,V,p[0],p[1],p[2]);
         return;
     }
 
