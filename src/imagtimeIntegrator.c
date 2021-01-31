@@ -123,7 +123,7 @@ void ExplicitX_alongX(int nx, int ny, doublec dt, double hx, double b,
 
 
 
-int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
+int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S, char p[])
 {
 
     unsigned int
@@ -131,215 +131,12 @@ int SplitStepPR(EqDataPkg EQ, int N, double realDT, Carray S)
         j,
         k,
         nx,
-        ny;
+        ny,
+        tid,
+        nthreads;
 
-    double
-        b,
-        g,
-        Ome,
-        hx,
-        hy,
-        Idt,
-        norm,
-        vir,
-        meanr,
-        maxres,
-        avgres;
-
-    double complex
-        E,
-        mu,
-        dt,
-        midx,
-        midy;
-
-    Carray
-        stepexp,
-        linpart,
-        upperx,
-        uppery,
-        lowerx,
-        lowery,
-        rhsx,
-        rhsy,
-        aux;
-
-    Rarray
-        x,
-        y,
-        V,
-        pot,
-        abs2;
-
-
-
-    dt  = - I * realDT; // Wick rotation - attenuate e^(- i E T)
-    Idt = - realDT;     // - I * dt : multiply operators after split-step
-
-    nx = EQ->nx;    // discretize points in x-direction
-    ny = EQ->ny;    // discretize points in y-direction
-    hx = EQ->hx;    // grid spacing in x-direction
-    hy = EQ->hy;    // grid spacing in y-direction
-    b = EQ->b;      // second order derivative coefficient
-    Ome = EQ->Ome;  // Rotation frequency
-    g = EQ->g;      // contact interaction strength
-    V = EQ->V;      // Potential in grid points
-    x = EQ->x;      // x-direction grid points
-    y = EQ->y;      // y-direction grid points
-
-    pot = rarrDef(nx*ny); // potential - trap and interaction combined
-    stepexp = carrDef(nx*ny); // Result after applied potential part
-    linpart = carrDef(nx*ny); // result after solved differential part
-
-    // diagonals of tridiagonal systems. When implicit in x-direction
-    // there are ny tridiagonal systems to be solved, each one with
-    // constant entries, but not equal from one system to another,
-    // thus there are ny constant values to setup. Analogously
-    // when y-direction is implicit
-    upperx = carrDef(ny);
-    uppery = carrDef(nx);
-    lowerx = carrDef(ny);
-    lowery = carrDef(nx);
-
-    // Right hand size for each implicit direction
-    rhsx = carrDef(nx);
-    rhsy = carrDef(ny);
-    aux = carrDef(ny);
-
-    abs2 = rarrDef(nx*ny);
-
-    // compute norm of initial guess to maintain in the propagation
-    carrAbs2(nx*ny,S,abs2);
-    // norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
-    norm = 1.0;
-
-
-
-    // Configure the implicit part of Peaceman-Rachford ADI method, for both
-    // x- and y-direction. In the presence of rotation, the step implicit in
-    // x-direction depends on the value for y and analogously when y is  the
-    // implicit direction, it depends on x value. Nonetheless for all system
-    // of equations the entries are constant for each fixed value of the
-    // explicit direction
-
-
-
-    // Implicit on x-direction
-    midx = I + b*dt/hx/hx;
-    for (j = 0; j < ny; j++)
-    {
-        upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
-        lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
-    }
-
-    // Implicit on y-direction
-    midy = I + b*dt/hy/hy;
-    for (i = 0; i < nx; i++)
-    {
-        uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
-        lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
-    }
-
-
-
-    printf("\n\nProgrs     Energy       mu");
-    printf("           <r>          Max. Res.");
-    printf("     Virial");
-    sepline();
-
-
-
-    for (k = 0; k < N; k++)
-    {
-
-        // Evolution of potential part in half step
-        carrAbs2(nx*ny,S,abs2);
-        rarrUpdate(nx*ny,V,g,abs2,pot);
-        rcarrExp(nx*ny,0.5*Idt,pot,stepexp);
-        carrMultiply(nx*ny,stepexp,S,linpart);
-        carrCopy(nx*ny,linpart,S);
-
-
-
-        // Evolution of derivative part entire step
-        for (j = 0; j < ny; j++)
-        {
-            ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,rhsx);
-            triDiag(nx,upperx[j],lowerx[j],midx,rhsx,&linpart[j*nx]);
-        }
-        carrCopy(nx*ny,linpart,S);
-
-        for (i = 0; i < nx; i++)
-        {
-            ExplicitX(nx,ny,i,dt,hx,b,Ome,y,S,rhsy);
-            triDiag(ny,uppery[i],lowery[i],midy,rhsy,aux);
-            for (j = 0; j < ny; j++)
-            {
-                linpart[i + j*nx] = aux[j];
-            }
-        }
-
-
-
-        // Evolution of potential part another half step
-        carrAbs2(nx*ny,linpart,abs2);
-        rarrUpdate(nx*ny,V,g,abs2,pot);
-        rcarrExp(nx*ny,0.5*Idt,pot,stepexp);
-        carrMultiply(nx*ny,stepexp,linpart,S);
-
-
-
-        // Renormalize
-        renormalize(nx,ny,S,hx,hy,norm);
-
-
-        if ( (k + 1) % 100 == 0 )
-        {
-            E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
-            mu = Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
-            meanr = MeanR(nx,ny,S,hx,hy,x,y);
-            maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
-            avgres = AvgResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
-            vir = Virial(nx,ny,hx,hy,b,g,V,S);
-
-            printf("%5.1lf%%   %11.7lf",(100.0*k)/N,creal(E));
-            printf("  %11.7lf",creal(mu));
-            printf("    %9.7lf",meanr);
-            printf("    %8.5lf",maxres);
-            printf("    %9.5lf",vir);
-            printf("\n");
-        }
-
-    }
-
-    free(stepexp);
-    free(linpart);
-    free(abs2);
-    free(upperx);
-    free(uppery);
-    free(lowerx);
-    free(lowery);
-    free(rhsx);
-    free(rhsy);
-    free(pot);
-    free(aux);
-
-    return N + 1;
-}
-
-
-
-
-
-int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
-{
-
-    unsigned int
-        i,
-        j,
-        k,
-        nx,
-        ny;
+    char
+        fname[100];
 
     double
         b,
@@ -371,7 +168,11 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         rhsx,
         rhsy,
         auxy,
-        auxx;
+        Ux,
+        Lx,
+        Uy,
+        Ly;
+
 
     Rarray
         x,
@@ -379,6 +180,22 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         V,
         pot,
         abs2;
+
+    FILE
+        * f_obs;
+
+
+
+    strcpy(fname,p);
+    strcat(fname,"_observables_imagtime.dat");
+
+    f_obs = fopen(fname, "w");
+    if (f_obs == NULL)
+    {
+        printf("\n\nERROR: impossible to open file '%s'", fname);
+        printf(" to write solution in time steps\n\n");
+        exit(EXIT_FAILURE);
+    }
 
 
 
@@ -409,12 +226,10 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     uppery = carrDef(nx);
     lowerx = carrDef(ny);
     lowery = carrDef(nx);
-
-    // Right hand size for each implicit direction
-    rhsx = carrDef(nx);
-    rhsy = carrDef(ny);
-    auxy = carrDef(ny);
-    auxx = carrDef(nx);
+    Ux = carrDef(nx*ny);
+    Lx = carrDef(nx*ny);
+    Uy = carrDef(nx*ny);
+    Ly = carrDef(nx*ny);
 
     abs2 = rarrDef(nx*ny);
 
@@ -440,6 +255,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     {
         upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
         lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
+        LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
     }
 
     // Implicit on y-direction
@@ -448,6 +264,7 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     {
         uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
         lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
+        LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
     }
 
 
@@ -470,28 +287,40 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         carrCopy(nx*ny,linpart,S);
 
 
-
-        // Evolution of derivative part entire step
-        for (j = 0; j < ny; j++)
+#pragma omp parallel private(j,i,rhsx,rhsy,auxy,tid,nthreads)
         {
-            ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,auxx);
-            ExplicitX_alongX(nx,ny,dt,hx,b,Ome,y[j],auxx,rhsx);
-            triDiag(nx,upperx[j],lowerx[j],midx,rhsx,&linpart[j*nx]);
-        }
-        carrCopy(nx*ny,linpart,S);
 
-        for (i = 0; i < nx; i++)
+    	rhsx = carrDef(nx);
+    	rhsy = carrDef(ny);
+    	auxy = carrDef(ny);
+
+        tid = omp_get_thread_num();        // thread Id
+        nthreads = omp_get_num_threads();  // number of threads being used
+
+        for (j = tid; j < ny; j += nthreads)
         {
-            for (j = 0; j < ny; j++)
-            {
-                rhsy[j] = S[i + j*nx];
-            }
-            triDiag(ny,uppery[i],lowery[i],midy,rhsy,auxy);
-            for (j = 0; j < ny; j++)
-            {
-                linpart[i + j*nx] = auxy[j];
-            }
+            ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,rhsx);
+            triDiagLU(nx,&Lx[j*nx],&Ux[j*nx],upperx[j],rhsx,&linpart[j*nx]);
         }
+
+    	// wait for all threads to solve for y-direction implicitly
+
+#pragma omp barrier
+
+        for (i = tid; i < nx; i += nthreads)
+        {
+            ExplicitX(nx,ny,i,dt,hx,b,Ome,y,linpart,rhsy);
+            triDiagLU(ny,&Ly[i*ny],&Uy[i*ny],uppery[i],rhsy,auxy);
+            for (j = 0; j < ny; j++) S[i + j*nx] = auxy[j];
+        }
+
+        free(rhsy);
+        free(rhsx);
+        free(auxy);
+
+        }
+
+        carrCopy(nx*ny,S,linpart);
 
 
 
@@ -507,14 +336,14 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
         renormalize(nx,ny,S,hx,hy,norm);
 
 
-        if ( (k + 1) % 100 == 0 )
+        if ( (k + 1) % (N / 1000) == 0 )
         {
             E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
             mu = Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
             meanr = MeanR(nx,ny,S,hx,hy,x,y);
             maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
             avgres = AvgResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
-            vir = Virial(nx,ny,hx,hy,b,g,V,S);
+            vir = Virial(nx,ny,hx,hy,b,g,V,EQ->Vname,S);
 
             printf("%5.1lf%%   %11.7lf",(100.0*k)/N,creal(E));
             printf("  %11.7lf",creal(mu));
@@ -522,6 +351,29 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
             printf("    %8.5lf",maxres);
             printf("    %9.5lf",vir);
             printf("\n");
+
+            fprintf(f_obs,"%9.4lf %11.7lf %11.7lf %10.7lf\n",(k+1)*realDT,
+                    creal(E),creal(mu),maxres);
+        }
+
+        // record solution at intermediate steps to analyse convergence
+        if ( (k + 1) == 5 * (N / 100) )
+        {
+            strcpy(fname,p);
+            strcat(fname,"_5percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 10 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_10percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 50 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_50percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
         }
 
     }
@@ -533,11 +385,292 @@ int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S)
     free(uppery);
     free(lowerx);
     free(lowery);
-    free(rhsx);
-    free(rhsy);
     free(pot);
-    free(auxx);
-    free(auxy);
+    free(Ux);
+    free(Lx);
+    free(Uy);
+    free(Ly);
+
+    fclose(f_obs);
+
+    return N + 1;
+}
+
+
+
+
+
+int SplitStepDYakonov(EqDataPkg EQ, int N, double realDT, Carray S, char p[])
+{
+
+    unsigned int
+        i,
+        j,
+        k,
+        nx,
+        ny,
+        tid,
+        nthreads;
+
+    double
+        b,
+        g,
+        Ome,
+        hx,
+        hy,
+        Idt,
+        norm,
+        vir,
+        meanr,
+        maxres,
+        avgres;
+
+    char
+        fname[100];
+
+    double complex
+        E,
+        mu,
+        dt,
+        midx,
+        midy;
+
+    Carray
+        stepexp,
+        linpart,
+        upperx,
+        uppery,
+        lowerx,
+        lowery,
+        rhsx,
+        rhsy,
+        auxy,
+        auxx,
+        Ux,
+        Lx,
+        Uy,
+        Ly;
+
+    Rarray
+        x,
+        y,
+        V,
+        pot,
+        abs2;
+
+    FILE
+        * f_obs;
+
+
+
+    strcpy(fname,p);
+    strcat(fname,"_observables_imagtime.dat");
+
+    f_obs = fopen(fname, "w");
+    if (f_obs == NULL)
+    {
+        printf("\n\nERROR: impossible to open file '%s'", fname);
+        printf(" to write solution in time steps\n\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dt  = - I * realDT; // Wick rotation - attenuate e^(- i E T)
+    Idt = - realDT;     // - I * dt : multiply operators after split-step
+
+    nx = EQ->nx;    // discretize points in x-direction
+    ny = EQ->ny;    // discretize points in y-direction
+    hx = EQ->hx;    // grid spacing in x-direction
+    hy = EQ->hy;    // grid spacing in y-direction
+    b = EQ->b;      // second order derivative coefficient
+    Ome = EQ->Ome;  // Rotation frequency
+    g = EQ->g;      // contact interaction strength
+    V = EQ->V;      // Potential in grid points
+    x = EQ->x;      // x-direction grid points
+    y = EQ->y;      // y-direction grid points
+
+    pot = rarrDef(nx*ny); // potential - trap and interaction combined
+    stepexp = carrDef(nx*ny); // Result after applied potential part
+    linpart = carrDef(nx*ny); // result after solved differential part
+
+    // diagonals of tridiagonal systems. When implicit in x-direction
+    // there are ny tridiagonal systems to be solved, each one with
+    // constant entries, but not equal from one system to another,
+    // thus there are ny constant values to setup. Analogously
+    // when y-direction is implicit
+    upperx = carrDef(ny);
+    uppery = carrDef(nx);
+    lowerx = carrDef(ny);
+    lowery = carrDef(nx);
+    Ux = carrDef(nx*ny);
+    Lx = carrDef(nx*ny);
+    Uy = carrDef(nx*ny);
+    Ly = carrDef(nx*ny);
+
+    abs2 = rarrDef(nx*ny);
+
+    // compute norm of initial guess to maintain in the propagation
+    carrAbs2(nx*ny,S,abs2);
+    // norm = sqrt(Rsimps2D(nx,ny,abs2,hx,hy));
+    norm = 1.0;
+
+
+
+    // Configure the implicit part of Peaceman-Rachford ADI method, for both
+    // x- and y-direction. In the presence of rotation, the step implicit in
+    // x-direction depends on the value for y and analogously when y is  the
+    // implicit direction, it depends on x value. Nonetheless for all system
+    // of equations the entries are constant for each fixed value of the
+    // explicit direction
+
+
+
+    // Implicit on x-direction
+    midx = I + b*dt/hx/hx;
+    for (j = 0; j < ny; j++)
+    {
+        upperx[j] = -0.5*b*dt/hx/hx + I * 0.25*y[j]*Ome*dt/hx;
+        lowerx[j] = -0.5*b*dt/hx/hx - I * 0.25*y[j]*Ome*dt/hx;
+        LU(nx,upperx[j],lowerx[j],midx,&Lx[j*nx],&Ux[j*nx]);
+    }
+
+    // Implicit on y-direction
+    midy = I + b*dt/hy/hy;
+    for (i = 0; i < nx; i++)
+    {
+        uppery[i] = -0.5*b*dt/hy/hy - I * 0.25*x[i]*Ome*dt/hy;
+        lowery[i] = -0.5*b*dt/hy/hy + I * 0.25*x[i]*Ome*dt/hy;
+        LU(ny,uppery[i],lowery[i],midy,&Ly[i*ny],&Uy[i*ny]);
+    }
+
+
+
+    printf("\n\nProgrs     Energy       mu");
+    printf("           <r>          Max. Res.");
+    printf("     Virial");
+    sepline();
+
+
+
+    for (k = 0; k < N; k++)
+    {
+
+        // Evolution of potential part in half step
+        carrAbs2(nx*ny,S,abs2);
+        rarrUpdate(nx*ny,V,g,abs2,pot);
+        rcarrExp(nx*ny,0.5*Idt,pot,stepexp);
+        carrMultiply(nx*ny,stepexp,S,linpart);
+        carrCopy(nx*ny,linpart,S);
+
+
+	// EVOLUTION OF LINEAR PART USING ADI-D'YAKONOV METHOD
+
+#pragma omp parallel private(j,i,rhsx,rhsy,auxy,auxx,tid,nthreads)
+        {
+
+        rhsx = carrDef(nx);
+        rhsy = carrDef(ny);
+        auxy = carrDef(ny);
+        auxx = carrDef(nx);
+
+        tid = omp_get_thread_num();        // thread Id
+        nthreads = omp_get_num_threads();  // number of threads being used
+
+        for (j = tid; j < ny; j += nthreads)
+        {
+            ExplicitY(nx,ny,j,dt,hy,b,Ome,x,S,auxx);
+            ExplicitX_alongX(nx,ny,dt,hx,b,Ome,y[j],auxx,rhsx);
+            triDiagLU(nx,&Lx[j*nx],&Ux[j*nx],upperx[j],rhsx,&linpart[j*nx]);
+        }
+
+        // wait for all threads to solve for y-direction implicitly
+
+#pragma omp barrier
+
+        for (i = tid; i < nx; i += nthreads)
+        {
+            for (j = 0; j < ny; j++) rhsy[j] = linpart[i + j*nx];
+            triDiagLU(ny,&Ly[i*ny],&Uy[i*ny],uppery[i],rhsy,auxy);
+            for (j = 0; j < ny; j++) S[i + j*nx] = auxy[j];
+        }
+
+        free(rhsy);
+        free(rhsx);
+        free(auxy);
+        free(auxx);
+
+        }
+
+        carrCopy(nx*ny,S,linpart);
+
+
+
+        // Evolution of potential part another half step
+        carrAbs2(nx*ny,linpart,abs2);
+        rarrUpdate(nx*ny,V,g,abs2,pot);
+        rcarrExp(nx*ny,0.5*Idt,pot,stepexp);
+        carrMultiply(nx*ny,stepexp,linpart,S);
+
+
+
+        // Renormalize
+        renormalize(nx,ny,S,hx,hy,norm);
+
+        if ( (k + 1) % (N / 1000) == 0 )
+        {
+            E = Energy(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
+            mu = Chem(nx,ny,hx,hy,b,Ome,g,V,x,y,S);
+            meanr = MeanR(nx,ny,S,hx,hy,x,y);
+            maxres = MaxResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
+            avgres = AvgResidue(nx,ny,hx,hy,b,Ome,g,V,x,y,S,mu);
+            vir = Virial(nx,ny,hx,hy,b,g,V,EQ->Vname,S);
+
+            printf("%5.1lf%%   %11.7lf",(100.0*k)/N,creal(E));
+            printf("  %11.7lf",creal(mu));
+            printf("    %9.7lf",meanr);
+            printf("    %8.5lf",maxres);
+            printf("    %9.5lf",vir);
+            printf("\n");
+
+            fprintf(f_obs,"%9.4lf %11.7lf %11.7lf %10.7lf\n",(k+1)*realDT,
+                    creal(E),creal(mu),maxres);
+        }
+
+        // record solution at intermediate steps to analyse convergence
+        if ( (k + 1) == 5 * (N / 100) )
+        {
+            strcpy(fname,p);
+            strcat(fname,"_5percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 10 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_10percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+        if ( (k + 1) == 50 * (N / 100))
+        {
+            strcpy(fname,p);
+            strcat(fname,"_50percent_imagtime.dat");
+            carr_txt(fname,nx*ny,S);
+        }
+
+    }
+
+    free(stepexp);
+    free(linpart);
+    free(abs2);
+    free(upperx);
+    free(uppery);
+    free(lowerx);
+    free(lowery);
+    free(pot);
+    free(Ux);
+    free(Lx);
+    free(Uy);
+    free(Ly);
+
+    fclose(f_obs);
 
     return N + 1;
 }

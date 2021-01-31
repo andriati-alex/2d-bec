@@ -1,0 +1,47 @@
+# ALEX V. ANDRIATI BENCHMARK OF 2D GROSS-PITAEVSKII EQUATION
+# 
+# Here are some values resulting from the imaginary time propagation  to
+# find the ground state of a 2D confined BEC. Before explain each column
+# the commun parameters are:
+#
+#   I. Trap V(x,y) = w^2 y^2 / 2 - a^2 x^2 / 2 + b^2 x^4 / 4 + a^4 / (4 b^2)
+#  II. Same interaction strength parameter g = 500
+# III. In dimensionless units kinect energy part - ( d^2/dx^2 + d^2/dy^2) / 2
+#  IV. Rotation part is given by i*\Omega(x*d/dy - y*d/dx) = - \Omega * Lz
+#   V. The macroscopic wave function is normalized to 1
+#  VI. Residue function is MAX { |\mu*\Psi - H(\Psi)|(x,y) }
+#
+# The Trap was designed to have minimum located at |x| = a/b.  Moreover  the
+# trap computed at such points along x-direction is zero (minimal potential)
+# The height of the double well formed by this trap is a^4 / (4 b^2). Such a
+# trap can be used to induce break-up(split the condensate)
+#
+# TRAP PARAMETERS WERE CHOSEN AS
+#
+#   b^2 / 4 = 0.02
+#   a = 1
+#   w = 2
+#
+# The columns indicate the following quantities:
+#
+#   1. time step
+#   2. x0
+#   3. xf
+#   4. Number of grid points along x
+#   5. y0
+#   6. yf
+#   7. Number of grid points along y
+#   8. rotation frequency \Omega
+#   9. Energy
+#  10. chemical potential
+#  11. average radius <r> where r = sqrt(x^2 + y^2)
+#  12. Maximun Residue on the grid
+#  13. Number of vortices observed by the density profile
+#
+# ############################################################################
+0.0001 -10 10 401 -6 6 241 0.6 7.9238777 12.9385308 3.5417855 0.00852 2
+0.0001 -10 10 401 -6 6 241 0.8 5.9090705 10.8132219 3.9212362 0.02667 5
+# In the two above cases the vortices are aligned different from the following
+# LAST THREE COLUMNS ARE           ENERGY         \mu           Lz       Nv
+0.0001 -10 10 401 -6 6 241 1.0  2.5422415560 7.6013224236 21.4369399257  7
+0.0001 -10 10 401 -6 6 241 1.2 -2.9808165285 2.4293578719 34.4760387208  8

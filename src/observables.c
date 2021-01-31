@@ -14,7 +14,7 @@ doublec Chem(int nx, int ny, double hx, double hy, double b, double Ome,
   *  To compute the energy the value passed on g must be the contact
   *  interaction strength divided by 2, otherwise gives the chemical
   *  potential of the system. It divides by the norm of the function
-  *  in the end to enforce the result obtained is the particle average
+  *  in the end to enforce the result to be the particle average
   *
   *  Parameters
   *
@@ -91,6 +91,53 @@ doublec Chem(int nx, int ny, double hx, double hy, double b, double Ome,
     free(Integ);
 
     return E / norm;
+
+}
+
+
+
+
+
+doublec angularMom(int nx, int ny, double hx, double hy, Rarray x, Rarray y,
+               Carray f)
+{
+
+    int
+        j,
+        i;
+
+    double complex
+        lz,
+        lzDensity;
+
+    Carray
+        dfdx,
+        dfdy,
+        Integ;
+
+    dfdx = carrDef(nx*ny);
+    dfdy = carrDef(nx*ny);
+    Integ = carrDef(nx*ny);
+
+    DfDx(nx,ny,f,hx,dfdx);
+    DfDy(nx,ny,f,hy,dfdy);
+
+    for (i = 0; i < nx; i++)
+    {
+        for (j = 0; j < ny; j++)
+        {
+            lzDensity = I * conj(f[i + j*nx]) * \
+                        (y[j]*dfdx[i + j*nx] - x[i]*dfdy[i + j*nx]);
+            Integ[i + j*nx] = lzDensity;
+        }
+    }
+
+    lz = Csimps2D(nx,ny,Integ,hx,hy);
+
+    // release memory
+    free(dfdx); free(dfdy); free(Integ);
+
+    return lz;
 
 }
 
@@ -242,9 +289,10 @@ double Interacting(int nx, int ny, double hx, double hy, double g, Carray f)
 
 
 double Virial(int nx, int ny, double hx, double hy, double b, double g,
-       Rarray V, Carray f)
+       Rarray V, char Vname [], Carray f)
 {
     int
+        p,
         i,
         j;
 
@@ -257,7 +305,10 @@ double Virial(int nx, int ny, double hx, double hy, double b, double g,
     Vtrap = Potential(nx,ny,hx,hy,V,f);
     Vint = Interacting(nx,ny,hx,hy,g,f);
 
-    return - 2 * K + 2 * Vtrap - 2 * Vint;
+    if (strcmp(Vname,"quartic") == 0) p = 4;
+    else p = 2;
+
+    return - 2 * K + p * Vtrap - 2 * Vint;
 }
 
 
@@ -343,8 +394,8 @@ double MaxResidue(int nx, int ny, double hx, double hy, double b, double Ome,
     DfDx(nx,ny,f,hx,dfdx);
     DfDy(nx,ny,f,hy,dfdy);
 
-    DfDx(nx,ny,dfdx,hx,d2fdx2);
-    DfDy(nx,ny,dfdy,hy,d2fdy2);
+    D2fDx2(nx,ny,f,hx,d2fdx2);
+    D2fDy2(nx,ny,f,hy,d2fdy2);
 
     maxres = 0;
 
@@ -416,8 +467,8 @@ double AvgResidue(int nx, int ny, double hx, double hy, double b, double Ome,
     DfDx(nx,ny,f,hx,dfdx);
     DfDy(nx,ny,f,hy,dfdy);
 
-    DfDx(nx,ny,dfdx,hx,d2fdx2);
-    DfDy(nx,ny,dfdy,hy,d2fdy2);
+    D2fDx2(nx,ny,f,hx,d2fdx2);
+    D2fDy2(nx,ny,f,hy,d2fdy2);
 
     for (i = 0; i < nx; i++)
     {

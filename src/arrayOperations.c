@@ -87,11 +87,11 @@ void Carray2MKL(int n, Carray b, CMKLarray a)
 
 
 
-/*          ***********************************************          *
+          /**********************************************
 
-                     BASIC ELEMENT-WISE OPERATIONS
+                   BASIC ELEMENT-WISE OPERATIONS
 
- *          ***********************************************          */
+          ***********************************************/
 
 
 
@@ -308,11 +308,11 @@ void renormalizeVector(int n, Carray v, double norm)
 
 
 
-/*          ***********************************************
+           /***********************************************
 
                                FUNCTIONALS
 
-            ***********************************************          */
+            ***********************************************/
 
 
 
@@ -371,6 +371,22 @@ double carrMod(int n, Carray v)
 
 
 
+double rarrMod(int n, Rarray v)
+{
+    int i;
+
+    double mod = 0;
+
+    for (i = 0; i < n; i++)
+    {
+        mod = mod + v[i] * v[i];
+    }
+
+    return sqrt(mod);
+}
+
+
+
 double carrMod2(int n, Carray v)
 {
     int i;
@@ -381,6 +397,19 @@ double carrMod2(int n, Carray v)
     {
         mod = mod + creal(v[i]) * creal(v[i]) + cimag(v[i]) * cimag(v[i]);
     }
+
+    return mod;
+}
+
+
+
+double rarrMod2(int n, Rarray v)
+{
+    int i;
+
+    double mod = 0;
+
+    for (i = 0; i < n; i++) mod = mod + v[i] * v[i];
 
     return mod;
 }
@@ -413,11 +442,11 @@ double rarrReduction(int n, Rarray v)
 
 
 
-/*          ***********************************************
+           /***********************************************
 
-                     FUNCTION COMPUTED ELEMENT-WISE
+                    FUNCTION COMPUTED ELEMENT-WISE
 
-            ***********************************************          */
+            ***********************************************/
 
 
 

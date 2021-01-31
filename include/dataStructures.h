@@ -12,22 +12,28 @@
  * Description
  * ===========
  *
- * Header with all datatypes used on this project
+ * Header with all datatypes used on this package
  *
  *
  *
- * The Compressed-Column-Storage(CCS) of a Matrix
- * ==============================================
+ * Few words on Compressed-Column-Storage(CCS) of a Matrix
+ * =======================================================
  *
- * This method consist in save memory when  storing a
- * sparse Matrix by shifting all the nonzero elements
- * to the left. Then the resulting matrix has only  m
- * columns,  m being  the maximum  number of  nonzero
- * elements in a same row, and the same number of rows
- * than the former one.  Thereafter  this  matrix  is
- * organized in a  vector  following  a  Column Major
- * ordering as well as its former column positions are
- * stored in a vector of integers of the same size.
+ * CCS is a method to save memory when storing sparse  matrices
+ * It has a good efficiency if the number of zeros in each  row
+ * are almost the same,  and maximum efficiency when  they  are
+ * identical. It works as follows, given a matrix expressed  in
+ * the conventional form with 'M' rows and 'N' columns one need
+ * to  shift  all nonzero elements to the left.  The  remaining
+ * matrix will have a column 'm'  whose any other column  k > m
+ * will contain only zeros, these ones are then cutted off. The
+ * final step is to concatenate  the  remaining  columns  in  a
+ * vector with the values and create another vector of integers
+ * with the original column number. The variable  'm'  indicate
+ * the maximum number of nonzero elements in  a  same  row. The
+ * leading vectors with values and former columns  numbers  are
+ * storaged in a column major format where given v[i] the former
+ * row number were (i % M)
  *
  *
  *
@@ -35,8 +41,7 @@
  * ==============================================
  *
  * It is created a structure to hold all equation's coefficients
- * and external potential (usually trap),  for simplification on
- * the integrators API.
+ * and external potential (usually trap).
  *
  * *************************************************************/
 
@@ -48,21 +53,23 @@
 
 
 
-typedef double complex doublec;
+/* Shortcut for datatypes and pointers to them
+ * =========================================== */
 
+typedef double complex doublec;    // default complex number
+typedef MKL_Complex16 * CMKLarray; // mkl complex vector
+typedef double complex * Carray;   // default complex vector
+typedef double * Rarray;           // real vector
 
-
-typedef MKL_Complex16 * CMKLarray;
-
-
-
-typedef double *  Rarray;
 typedef double ** Rmatrix;
-
-
-
-typedef double complex *  Carray;
 typedef double complex ** Cmatrix;
+
+
+
+
+
+
+
 
 
 
@@ -71,13 +78,12 @@ typedef double complex ** Cmatrix;
 
 struct _CCScmat
 {
-    int  m;     // max number of non-zero elements in a same row
+    int m;     // max number of non-zero elements in a same row
 	int * col;  // Column index of elemetns.
 	Carray vec; // column oriented vector.
 };
 
 typedef struct _CCScmat * CCScmat;
-
 
 
 /* Compressed Column storage of an n x n Real Matrix
@@ -86,12 +92,19 @@ typedef struct _CCScmat * CCScmat;
 struct _CCSrmat
 {
     // same fields from complex case above
-    int  m;
+    int m;
 	int * col;
 	Rarray vec;
 };
 
 typedef struct _CCSrmat * CCSrmat;
+
+
+
+
+
+
+
 
 
 
@@ -104,7 +117,7 @@ struct _EquationDataPkg
     char
         Vname[80]; // One-Body external potential name
 
-    int 
+    int
         nx,
         ny;
 
@@ -116,7 +129,7 @@ struct _EquationDataPkg
         Ome;    // rotation frequency
 
     double
-        p[4];   // Parameters to generate external potential
+        p[5];  // Parameters to generate external potential
 
     Rarray
         x,

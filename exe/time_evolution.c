@@ -71,8 +71,8 @@ void SaveConf(FILE * f, EqDataPkg EQ, double dt, int N)
 
     // Equation parameters
     fprintf(f, "%.15lf %.15lf %.15lf ", EQ->b, EQ->Ome, EQ->g);
-    fprintf(f, "%.15lf %.15lf %.15lf %.15lf\n",
-            EQ->p[0], EQ->p[1], EQ->p[2], EQ->p[3]);
+    fprintf(f, "%.15lf %.15lf %.15lf %.15lf %.15lf\n",
+            EQ->p[0], EQ->p[1], EQ->p[2], EQ->p[3], EQ->p[4]);
 
 }
 
@@ -99,7 +99,7 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
         xf,
         yi,
         yf,
-        p[4];
+        p[5];
 
 
 
@@ -113,8 +113,8 @@ EqDataPkg SetupParams(FILE * paramFile, FILE * confFile,
     // Read a line of numbers corresponding to equation parameters
     // -----------------------------------------------------------
 
-    k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
-        &p[0], &p[1], &p[2], &p[3]);
+    k = fscanf(paramFile,"%lf %lf %lf %lf %lf %lf %lf %lf", &b, &Ome, &g,
+        &p[0], &p[1], &p[2], &p[3], &p[4]);
 
     return PackEqData(nx,ny,xi,xf,yi,yf,b,g,Ome,Vname,p);
 
@@ -150,9 +150,7 @@ int main(int argc, char * argv[])
         nx,
         ny,
         method,
-        Nlines,
-        skipframes,
-        resetinit;
+        skip;
 
 
 
@@ -176,10 +174,10 @@ int main(int argc, char * argv[])
 
 
     FILE
-        * domain_file,
-        * job_file,
-        * orb_file,
-        * eq_file;
+        * domain_file,  // grid and time information
+        * job_file,     // misc configurations to perform integration
+        * f0_file,      // initial function in grid points
+        * eq_file;      // equation parameters
 
 
 
@@ -200,16 +198,14 @@ int main(int argc, char * argv[])
 
 
 
-    job_file = fopen("job.conf", "r");
-
-    if (job_file == NULL) // impossible to open file
+    job_file = fopen("job-time.conf", "r");
+    if (job_file == NULL)
     {
-        printf("\n\n\tERROR: impossible to open file %s\n", "job.conf");
+        printf("\n\nERROR: impossible to open file %s\n", "job-time.conf");
         exit(EXIT_FAILURE);
     }
 
     i = 1;
-
     while ( (c  = getc(job_file)) != EOF)
     {
 
@@ -241,12 +237,7 @@ int main(int argc, char * argv[])
                 i = i + 1;
                 break;
             case 6:
-                fscanf(job_file, "%d", &Nlines);
-                skipframes = Nlines;
-                i = i + 1;
-                break;
-            case 7:
-                fscanf(job_file, "%d", &resetinit);
+                fscanf(job_file, "%d", &skip);
                 i = i + 1;
                 break;
         }
@@ -256,10 +247,6 @@ int main(int argc, char * argv[])
     }
 
     fclose(job_file);
-
-
-
-
 
     if (timeinfo != 'r' && timeinfo != 'R')
     {
@@ -280,15 +267,19 @@ int main(int argc, char * argv[])
 
 
 
-    /*  ===============================================================
-     
-                   LET FILES OPENNED TO EXECUTE LIST OF JOBS
-     
-        ===============================================================  */
-
-
+    /*********************************************************************
+     *********************************************************************
+     ***************     OPEN TO EXECUTE LIST OF JOBS      ***************
+     *********************************************************************
+     *********************************************************************/
 
     // open file with values of equation's parameters
+    printf("\n\n");
+    printf("\t\t*********************************************\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*           SEARCHING SETUP FILES           *\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*********************************************\n");
 
     strcpy(fname, "input/");
     strcat(fname, infname);
@@ -297,7 +288,6 @@ int main(int argc, char * argv[])
     printf("\nLooking for %s", fname);
 
     eq_file = fopen(fname, "r");
-
     if (eq_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
@@ -305,13 +295,12 @@ int main(int argc, char * argv[])
     }
     else
     {
-        printf(" ....... Found !\n");
+        printf(" ....... Found !");
     }
 
 
 
     // open file to configure grid domain
-
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_domain.dat");
@@ -319,7 +308,6 @@ int main(int argc, char * argv[])
     printf("\nLooking for %s", fname);
 
     domain_file = fopen(fname, "r");
-
     if (domain_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
@@ -327,35 +315,32 @@ int main(int argc, char * argv[])
     }
     else
     {
-        printf(" ... Found !\n");
+        printf(" ... Found !");
     }
 
 
 
     // open file with values of initial condition
-
     strcpy(fname, "input/");
     strcat(fname, infname);
     strcat(fname, "_init.dat");
 
     printf("\nLooking for %s", fname);
 
-    orb_file = fopen(fname, "r");
-
-    if (orb_file == NULL)  // impossible to open file
+    f0_file = fopen(fname, "r");
+    if (f0_file == NULL)  // impossible to open file
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
         exit(EXIT_FAILURE);
     }
     else
     {
-        printf(" ..... Found !\n");
+        printf(" ..... Found !");
     }
 
 
 
     // open file to write parameters of domain and equation
-
     strcpy(fname, "output/");
     strcat(fname, outfname);
 
@@ -368,8 +353,7 @@ int main(int argc, char * argv[])
     }
 
     job_file = fopen(fname, "w");
-
-    if (job_file == NULL)  // impossible to open file
+    if (job_file == NULL)
     {
         printf("\n\nERROR: impossible to open file %s\n\n", fname);
         exit(EXIT_FAILURE);
@@ -379,41 +363,53 @@ int main(int argc, char * argv[])
 
 
 
+
+
+    // PACK DOMAIN AND PARAMETERS INFORMATION IN A STRUCTURE
     EQ = SetupParams(eq_file, domain_file, potname, &dt, &N);
     nx = EQ->nx;
     ny = EQ->ny;
 
-    S = carrDef(nx*ny); // solution at grid points
+    // SETUP INITIAL DATA TO PROPAGATE
+    S = carrDef(nx*ny);
     abs2 = rarrDef(nx*ny);
-
-
-
-
-
-
-
-
-
-
-    /*  ===============================================================
-     
-                       SETUP INITIAL DATA TO PROPAGATE
-     
-        ===============================================================  */
-
     for (i = 0; i < nx*ny; i++)
     {
-        k = fscanf(orb_file, " (%lf%lfj)", &real, &imag);
+        k = fscanf(f0_file, " (%lf%lfj)", &real, &imag);
         S[i] = real + I * imag;
         abs2[i] = real*real + imag*imag;
     }
 
-    fclose(orb_file);
+    fclose(f0_file);
 
-    printf("\nGot Initial condition, with norm =");
-    printf(" %.10lf\n", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
-    printf("nx = %d | ny = %d | hx = %.10lf | hy = %.10lf\n",
-           nx, ny, EQ->hx, EQ->hy);
+    printf("\nGot Initial condition with || . || =");
+    printf(" %.6lf\n", sqrt(Rsimps2D(nx,ny,abs2,EQ->hx,EQ->hy)));
+
+
+
+
+
+
+
+
+
+
+    printf("\n\n\n\n");
+    printf("\t\t*********************************************\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*            GRID SPECIFICATIONS            *\n");
+    printf("\t\t*                                           *\n");
+    printf("\t\t*********************************************\n");
+    printf("\n");
+
+    printf("x = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
+	   EQ->x[0],EQ->x[1],EQ->x[nx-2],EQ->x[nx-1]);
+    printf("%d points for x-direction | x-grid-spacing = %.3lf\n",nx,EQ->hx);
+
+    printf("y = [ %.2lf , %.2lf , ... , %.2lf , %.2lf ]\n",
+	   EQ->y[0],EQ->y[1],EQ->y[ny-2],EQ->y[ny-1]);
+    printf("%d points for y-direction | y-grid-spacing = %.3lf\n",ny,EQ->hy);
+    printf("Final time %.2lf in steps of %.6lf",N*dt,dt);
 
 
 
@@ -430,34 +426,40 @@ int main(int argc, char * argv[])
      
         ===============================================================  */
 
+    printf("\n\n");
+    sepline();
+
     start = omp_get_wtime();
 
     if (timeinfo == 'i' || timeinfo == 'I')
     {
-        sepline();
-        printf("\nDoing imaginary time integration #%d\n\n", 1);
+        strcpy(fname, "output/");
+        strcat(fname, outfname);
+
+        printf("\nStarting Imaginary time integration\n\n");
+
         switch (method)
         {
             case 1:
-                N = SplitStepPR(EQ, N, dt, S);
+                N = SplitStepPR(EQ, N, dt, S, fname);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with Peaceman-Rachford");
                 printf(" : %.0lf sec = ",time_used);
-		TimePrint(time_used);
+                TimePrint(time_used);
                 break;
             case 2:
-                N = SplitStepDYakonov(EQ, N, dt, S);
+                N = SplitStepDYakonov(EQ, N, dt, S, fname);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with D'Yakonov");
                 printf(" : %.0lf sec = ",time_used);
-		TimePrint(time_used);
+                TimePrint(time_used);
                 break;
         }
 
         // Record data
         strcpy(fname, "output/");
         strcat(fname, outfname);
-        strcat(fname, "_line-1_orb_imagtime.dat");
+        strcat(fname, "_final_imagtime.dat");
 
         carr_txt(fname, nx*ny, S);
 
@@ -465,28 +467,25 @@ int main(int argc, char * argv[])
 
     if (timeinfo == 'r' || timeinfo == 'R')
     {
-        sepline();
         printf("\nDoing real time integration\n\n");
 
-        // Record data
         strcpy(fname, "output/");
         strcat(fname, outfname);
-        // strcat(fname, "_orb_realtime.dat");
         switch (method)
         {
             case 1:
-                N = RealSplitStepPR(EQ, N, dt, S, skipframes, fname);
+                N = RealSplitStepPR(EQ, N, dt, S, skip, fname);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with Peaceman-Rachford");
                 printf(" : %.0lf sec = ",time_used);
-		TimePrint(time_used);
+                TimePrint(time_used);
                 break;
             case 2:
-                N = RealSplitStepDYakonov(EQ, N, dt, S, skipframes, fname);
+                N = RealSplitStepDYakonov(EQ, N, dt, S, skip, fname);
                 time_used = (double) (omp_get_wtime() - start);
                 printf("\n\nTime taken to solve with D'Yakonov");
                 printf(" : %.0lf sec = ",time_used);
-		TimePrint(time_used);
+                TimePrint(time_used);
                 break;
         }
 
@@ -498,8 +497,6 @@ int main(int argc, char * argv[])
 
 
 
-    /* release memory
-     * ------------------------------------------------------------------- */
 
     fclose(job_file);
     fclose(eq_file);
@@ -507,11 +504,6 @@ int main(int argc, char * argv[])
     free(S);
     free(abs2);
     ReleaseEqDataPkg(EQ);
-    /* ------------------------------------------------------------------- */
-
-
-
-    /*   ==========================    END    ==========================   */
 
     printf("\n\n");
     return 0;
